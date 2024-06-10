@@ -47,6 +47,7 @@
             this.txtProxy = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.btnRemove = new System.Windows.Forms.Button();
+            this.btnTest = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.infoTable)).BeginInit();
             this.SuspendLayout();
             // 
@@ -213,11 +214,22 @@
             this.btnRemove.UseVisualStyleBackColor = true;
             this.btnRemove.Click += new System.EventHandler(this.btnRemove_Click);
             // 
+            // btnTest
+            // 
+            this.btnTest.Location = new System.Drawing.Point(465, 263);
+            this.btnTest.Name = "btnTest";
+            this.btnTest.Size = new System.Drawing.Size(228, 55);
+            this.btnTest.TabIndex = 14;
+            this.btnTest.Text = "Test";
+            this.btnTest.UseVisualStyleBackColor = true;
+            this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1318, 749);
+            this.Controls.Add(this.btnTest);
             this.Controls.Add(this.btnRemove);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.txtProxy);
@@ -261,6 +273,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn Status;
         private System.Windows.Forms.DataGridViewButtonColumn ActionButtuon;
         private System.Windows.Forms.Button btnRemove;
+        private System.Windows.Forms.Button btnTest;
     }
 }
 

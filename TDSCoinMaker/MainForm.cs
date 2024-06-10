@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using TDSCoinMaker.FormEditting;
 using TDSCoinMaker.TDS;
@@ -12,6 +13,14 @@ namespace TDSCoinMaker
 {
     public partial class MainForm : Form
     {
+        public DataGridView getInfoTable()
+        {
+            return infoTable;
+        }
+        public void setInfoTable(DataGridView infoTable)
+        {
+            this.infoTable = infoTable;
+        }
         public MainForm()
         {
             FeatureDisable.DisableMaximizeBox(this);
@@ -88,10 +97,20 @@ namespace TDSCoinMaker
         }
         private void infoTable_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn && e.RowIndex >= 0)
+            {
+                //  MessageBox.Show("Content in this index of this row = " + infoTable.Rows[e.RowIndex].Cells[0].Value.ToString());
+                //  User user = users[e.RowIndex];
+                //  FBUtilities.OpenBrowser("https://www.facebook.com", 400, 600, user.getFbToken()[user.currentFbTokenIndex], "1231684234886409");
 
-            MessageBox.Show("Content in 0 index of this row = " + infoTable.Rows[e.RowIndex].Cells[0].Value.ToString());
-            User user = users[e.RowIndex];
-            FBUtilities.OpenBrowser("https://www.facebook.com", 400, 600, user.getFbToken()[user.currentFbTokenIndex], "1231684234886409");
+                User user = users[e.RowIndex];
+                Task.Run(() => user.doJob());
+            }
+        }
+
+        private void btnTest_Click(object sender, EventArgs e)
+        {
+            Console.WriteLine(Utilities.ToStringCustom(TDSUtilities.getTDSJob("TDSQfiETMyVmdlNnI6IiclZXZzJCLiInclR2bjdmbh9GaiojIyV2c1Jye", "like")));
         }
     }
 }

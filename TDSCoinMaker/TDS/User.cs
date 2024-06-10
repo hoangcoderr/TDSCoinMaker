@@ -7,6 +7,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TDSCoinMaker.FormEditting;
 
 namespace TDSCoinMaker.TDS
 {
@@ -16,7 +17,7 @@ namespace TDSCoinMaker.TDS
         private string tdsToken = string.Empty;
         public List<string> fbToken = new List<string>();
 
-        private string job_type = string.Empty;
+        private string job_type = "like";
 
         private List<string> job_id = new List<string>();
 
@@ -66,6 +67,41 @@ namespace TDSCoinMaker.TDS
         {
             return status;
         }
+        public void getJobIdFromTDS()
+        {
+            this.status = Const.GETTING_TDS_JOB;
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 6, status);
+            job_id = TDSUtilities.getTDSJob(tdsToken, job_type);
+            this.status = Const.GETTING_TDS_COMPLETE;
+            Utilities.updateRow(Program.mainForm.getInfoTable(), this, id);
+        }
+
+        public void doJob()
+        {
+            if (job_id.Count == 0)
+            {
+                getJobIdFromTDS();
+            }
+            foreach (string job in job_id)
+            {
+                status = Const.DOING_JOB + job;
+                Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
+                OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken[currentFbTokenIndex], job);
+                Thread.Sleep(1000);
+                if (TDSUtilities.claimTDSXu(tdsToken, job_type, job))
+                {
+                    status = Const.DONE_JOB + job;
+                    Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
+                }
+                else
+                {
+                    status = Const.FAIL_JOB + job;
+                    Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
+                }
+                Thread.Sleep(1000);
+            }
+            
+        }
         public void setId(int id)
         {
             this.id = id;
@@ -98,7 +134,7 @@ namespace TDSCoinMaker.TDS
         {
             return proxy;
         }
-
+        
         public void OpenBrowser(string url, int width, int height, string cookies, string urlPost)
         {
             FBUtilities.OpenBrowser(url, width, height, cookies, urlPost);

@@ -54,6 +54,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormEditting\Const.cs" />
     <Compile Include="FormEditting\FeatureDisable.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

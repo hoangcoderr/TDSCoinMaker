@@ -40,49 +40,28 @@ namespace TDSCoinMaker.TDS
 
         public static void LikePost(IWebDriver webDriver, string urlPost)
         {
-            IJavaScriptExecutor javaExecutor = (IJavaScriptExecutor)webDriver;
-            int scrollStep = 100;
-            // Thời gian chờ giữa các lần cuộn (ms)
-            int delay = 50;
-            bool likeButtonFound = false;
+            IJavaScriptExecutor jsExecutor = (IJavaScriptExecutor)webDriver;
+
+            // Scroll down until the Like button is visible
+            jsExecutor.ExecuteScript("window.scrollTo(0, document.body.scrollHeight);");
 
             try
             {
-             
-                while (!likeButtonFound)
-                {
-                    try
-                    {
-                        // Tìm nút "Like"
-                        IWebElement likeButton = webDriver.FindElement(By.XPath("//div[(contains(@aria-label, 'Thích') or contains(@aria-label, 'Like')) and @role='button']"));
-                        // Nếu tìm thấy, ấn vào nút Like
-                        likeButton.Click();
-                        likeButtonFound = true;
-                        Console.WriteLine("Đã ấn nút Like!");
-                    }
-                    catch (NoSuchElementException)
-                    {
-                        // Nếu không tìm thấy nút "Like", cuộn xuống một đoạn và chờ
-                        long documentHeight = (long)javaExecutor.ExecuteScript("return document.body.scrollHeight");
-                        long currentScrollPosition = (long)javaExecutor.ExecuteScript("return window.scrollY + window.innerHeight");
+                // Wait for the Like button to be visible
+                WebDriverWait wait = new WebDriverWait(webDriver, TimeSpan.FromSeconds(10));
+                IWebElement likeButton = wait.Until(driver =>
+                    driver.FindElement(By.XPath("//div[@aria-label='Thích' and @role='button']")));
 
-                        // Kiểm tra xem đã cuộn đến cuối trang chưa
-                        if (currentScrollPosition >= documentHeight)
-                        {
-                            Console.WriteLine("Không tìm thấy nút Like. Cuộn hết trang.");
-                            break;
-                        }
-                        javaExecutor.ExecuteScript($"window.scrollBy(0, {scrollStep});");
-                        Thread.Sleep(delay);
-                    }
-                }
+                // Click the Like button
+                ((IJavaScriptExecutor)webDriver).ExecuteScript("arguments[0].click();", likeButton);
             }
-            catch (Exception ex)
+            catch (NoSuchElementException)
             {
-                Console.WriteLine("Lỗi: " + ex.Message);
+                Console.WriteLine("Like button not found");
             }
             finally
             {
+                Thread.Sleep(1000);
                 webDriver.Quit();
             }
         }
@@ -121,6 +100,5 @@ namespace TDSCoinMaker.TDS
             chromeDriver.Navigate().GoToUrl(url + "/" + urlPost);
             LikePost(chromeDriver, urlPost);
         }
-
     }
 }

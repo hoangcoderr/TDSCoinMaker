@@ -45,7 +45,7 @@ namespace TDSCoinMaker
                 foreach (var line in lines)
                 {
                     string[] data = line.Split('|');
-                    User user = new User(int.Parse(data[0]), new List<string>(data[1].Split(',')), data[2], data[3], new List<string>(data[4].Split(',')), data[5], data[6]);
+                    User user = new User(int.Parse(data[0]), new List<string>(data[1].Split(',')), data[2], data[3], new List<string>(), data[5], string.Empty);
                     addDataToTable(dgv, user);
                     MainForm.users.Add(user);
                 }
@@ -101,6 +101,15 @@ namespace TDSCoinMaker
             dgv.Rows[index].Cells[5].Value = user.getProxy();
             dgv.Rows[index].Cells[6].Value = user.getStatus();
             SaveAccToFile("config\\account.ini", dgv);
+            Program.mainForm.setInfoTable(dgv);
         }
+
+        public static void updateColumn(DataGridView dgv, int indexRow, int indexColumn, string value)
+        {
+            dgv.Rows[indexRow].Cells[indexColumn].Value = value;
+            SaveAccToFile("config\\account.ini", dgv);
+            Program.mainForm.setInfoTable(dgv);
+        }
+
     }
 }
