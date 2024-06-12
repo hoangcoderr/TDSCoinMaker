@@ -40,6 +40,14 @@
             this.btnAdd = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.nbrJobDone = new System.Windows.Forms.NumericUpDown();
+            this.nbrStopHold = new System.Windows.Forms.NumericUpDown();
+            this.nbrStartHold = new System.Windows.Forms.NumericUpDown();
+            this.label8 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             this.txtTDSToken = new System.Windows.Forms.TextBox();
             this.txtFbToken = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -48,7 +56,18 @@
             this.label4 = new System.Windows.Forms.Label();
             this.btnRemove = new System.Windows.Forms.Button();
             this.btnTest = new System.Windows.Forms.Button();
+            this.nbrStartWaitingJob = new System.Windows.Forms.NumericUpDown();
+            this.nbrStopWaitingJob = new System.Windows.Forms.NumericUpDown();
+            this.label9 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label11 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.infoTable)).BeginInit();
+            this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrJobDone)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopHold)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartHold)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).BeginInit();
             this.SuspendLayout();
             // 
             // infoTable
@@ -151,10 +170,92 @@
             // 
             // panel2
             // 
+            this.panel2.Controls.Add(this.label11);
+            this.panel2.Controls.Add(this.label10);
+            this.panel2.Controls.Add(this.label9);
+            this.panel2.Controls.Add(this.nbrStopWaitingJob);
+            this.panel2.Controls.Add(this.nbrStartWaitingJob);
+            this.panel2.Controls.Add(this.nbrJobDone);
+            this.panel2.Controls.Add(this.nbrStopHold);
+            this.panel2.Controls.Add(this.nbrStartHold);
+            this.panel2.Controls.Add(this.label8);
+            this.panel2.Controls.Add(this.label7);
+            this.panel2.Controls.Add(this.label6);
+            this.panel2.Controls.Add(this.label5);
+            this.panel2.Controls.Add(this.label3);
             this.panel2.Location = new System.Drawing.Point(678, 33);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(585, 224);
             this.panel2.TabIndex = 3;
+            // 
+            // nbrJobDone
+            // 
+            this.nbrJobDone.Location = new System.Drawing.Point(215, 19);
+            this.nbrJobDone.Name = "nbrJobDone";
+            this.nbrJobDone.Size = new System.Drawing.Size(41, 20);
+            this.nbrJobDone.TabIndex = 22;
+            this.nbrJobDone.ValueChanged += new System.EventHandler(this.nbrJobDone_ValueChanged);
+            // 
+            // nbrStopHold
+            // 
+            this.nbrStopHold.Location = new System.Drawing.Point(128, 20);
+            this.nbrStopHold.Name = "nbrStopHold";
+            this.nbrStopHold.Size = new System.Drawing.Size(41, 20);
+            this.nbrStopHold.TabIndex = 21;
+            this.nbrStopHold.ValueChanged += new System.EventHandler(this.nbrStopHold_ValueChanged);
+            // 
+            // nbrStartHold
+            // 
+            this.nbrStartHold.Location = new System.Drawing.Point(41, 20);
+            this.nbrStartHold.Name = "nbrStartHold";
+            this.nbrStartHold.Size = new System.Drawing.Size(41, 20);
+            this.nbrStartHold.TabIndex = 20;
+            this.nbrStartHold.ValueChanged += new System.EventHandler(this.nbrStartHold_ValueChanged);
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(264, 22);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(56, 13);
+            this.label8.TabIndex = 19;
+            this.label8.Text = "jobs done!";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(182, 22);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(28, 13);
+            this.label7.TabIndex = 18;
+            this.label7.Text = "after";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(172, 22);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(12, 13);
+            this.label6.TabIndex = 17;
+            this.label6.Text = "s";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(87, 22);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(35, 13);
+            this.label5.TabIndex = 16;
+            this.label5.Text = "s from";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(13, 22);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(29, 13);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "Wait";
             // 
             // txtTDSToken
             // 
@@ -216,13 +317,56 @@
             // 
             // btnTest
             // 
-            this.btnTest.Location = new System.Drawing.Point(465, 263);
+            this.btnTest.Location = new System.Drawing.Point(543, 299);
             this.btnTest.Name = "btnTest";
             this.btnTest.Size = new System.Drawing.Size(228, 55);
             this.btnTest.TabIndex = 14;
             this.btnTest.Text = "Test";
             this.btnTest.UseVisualStyleBackColor = true;
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
+            // 
+            // nbrStartWaitingJob
+            // 
+            this.nbrStartWaitingJob.Location = new System.Drawing.Point(41, 46);
+            this.nbrStartWaitingJob.Name = "nbrStartWaitingJob";
+            this.nbrStartWaitingJob.Size = new System.Drawing.Size(41, 20);
+            this.nbrStartWaitingJob.TabIndex = 23;
+            this.nbrStartWaitingJob.ValueChanged += new System.EventHandler(this.nbrStartWaitingJob_ValueChanged);
+            // 
+            // nbrStopWaitingJob
+            // 
+            this.nbrStopWaitingJob.Location = new System.Drawing.Point(128, 46);
+            this.nbrStopWaitingJob.Name = "nbrStopWaitingJob";
+            this.nbrStopWaitingJob.Size = new System.Drawing.Size(41, 20);
+            this.nbrStopWaitingJob.TabIndex = 24;
+            this.nbrStopWaitingJob.ValueChanged += new System.EventHandler(this.nbrStopWaitingJob_ValueChanged);
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(13, 48);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(29, 13);
+            this.label9.TabIndex = 25;
+            this.label9.Text = "Wait";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(88, 48);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(35, 13);
+            this.label10.TabIndex = 26;
+            this.label10.Text = "s from";
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(175, 48);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(103, 13);
+            this.label11.TabIndex = 27;
+            this.label11.Text = "after complete a job!";
             // 
             // MainForm
             // 
@@ -247,6 +391,13 @@
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.MainForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.infoTable)).EndInit();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrJobDone)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopHold)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartHold)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -274,6 +425,19 @@
         private System.Windows.Forms.DataGridViewButtonColumn ActionButtuon;
         private System.Windows.Forms.Button btnRemove;
         private System.Windows.Forms.Button btnTest;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown nbrStartHold;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.NumericUpDown nbrJobDone;
+        private System.Windows.Forms.NumericUpDown nbrStopHold;
+        private System.Windows.Forms.Label label11;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.NumericUpDown nbrStopWaitingJob;
+        private System.Windows.Forms.NumericUpDown nbrStartWaitingJob;
     }
 }
 

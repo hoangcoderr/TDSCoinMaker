@@ -8,6 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TDSCoinMaker.FormEditting;
+using System.Net.NetworkInformation;
+using System.Data;
+using System.Linq.Expressions;
 
 namespace TDSCoinMaker.TDS
 {
@@ -15,9 +18,11 @@ namespace TDSCoinMaker.TDS
     {
         private int id = -1;
         private string tdsToken = string.Empty;
-        public List<string> fbToken = new List<string>();
+        public string fbToken = string.Empty;
 
-        private string job_type = "like";
+        private string job_type = "likevip";
+
+        private List<string> type_of_job = new List<string>();
 
         private List<string> job_id = new List<string>();
 
@@ -28,7 +33,15 @@ namespace TDSCoinMaker.TDS
         public int currentJobIndex = 0;
 
         public int currentFbTokenIndex = 0;
-        public User(int id, List<string> fbToken, string tdsToken, string job_type, List<string> job_id, string proxy, string status)
+
+        public string fbId = string.Empty;
+
+        public int jobCompleted = 0;
+
+        public int tdsXu = 0;
+
+        private CancellationTokenSource cts = new CancellationTokenSource();
+        public User(int id, string fbToken, string tdsToken, string job_type, List<string> job_id, string proxy, string status)
         {
             this.id = id;
             this.tdsToken = tdsToken;
@@ -38,20 +51,41 @@ namespace TDSCoinMaker.TDS
             this.status = status;
             this.proxy = proxy;
         }
-        public User(string tdsToken, string proxy)
+        public User(string tdsToken, string proxy, string fbToken)
         {
             this.proxy = proxy;
             this.tdsToken = tdsToken;
+            this.fbToken = fbToken;
         }
         public int getId()
         {
             return id;
         }
+        public void StartJob()
+        {
+            // Run doJob in a Task, passing the CancellationToken
+            Task.Run(() => doJob(cts.Token), cts.Token);
+        }
+        public void StopJob()
+        {
+            cts.Cancel();
+        }
+        public void setFbId()
+        {
+
+            string[] temp = FBUtilities.cookiesGetter(fbToken);
+            fbId = temp[0];
+
+        }
+        public void resetJobDone()
+        {
+            jobCompleted = 0;
+        }
         public string getTdsToken()
         {
             return tdsToken;
         }
-        public List<string> getFbToken()
+        public string getFbToken()
         {
             return fbToken;
         }
@@ -67,40 +101,79 @@ namespace TDSCoinMaker.TDS
         {
             return status;
         }
-        public void getJobIdFromTDS()
+        public void getJobIdFromTDS(string job_type)
         {
-            this.status = Const.GETTING_TDS_JOB;
-            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 6, status);
-            job_id = TDSUtilities.getTDSJob(tdsToken, job_type);
-            this.status = Const.GETTING_TDS_COMPLETE;
-            Utilities.updateRow(Program.mainForm.getInfoTable(), this, id);
+            UpdateStatus(Const.GETTING_TDS_JOB);
+            (type_of_job, job_id) = TDSUtilities.getTDSJob(tdsToken, job_type);
+            UpdateStatus(Const.GETTING_TDS_COMPLETE);
+            Console.WriteLine(Utilities.ToStringCustom(type_of_job));
+            Console.WriteLine(Utilities.ToStringCustom(job_id));
         }
-
-        public void doJob()
+        public void UpdateStatus(string stringUpdating)
         {
-            if (job_id.Count == 0)
+            this.status = stringUpdating;
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 6, status);
+        }
+        public void UpdateListJob(string job_type)
+        {
+            this.job_type = job_type;
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 3, job_type);
+        }
+        public void configAccToDoJob()
+        {
+            TDSUtilities.setAccToDoJob(tdsToken, fbId);
+        }
+        public int updateTdsXu(int bonusXu)
+        {
+            this.tdsXu += bonusXu;
+            return tdsXu;
+        }
+        public void doJob(CancellationToken cancellationToken)
+        {
+            while (true)
             {
-                getJobIdFromTDS();
-            }
-            foreach (string job in job_id)
-            {
-                status = Const.DOING_JOB + job;
-                Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
-                OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken[currentFbTokenIndex], job);
-                Thread.Sleep(1000);
-                if (TDSUtilities.claimTDSXu(tdsToken, job_type, job))
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    status = Const.DONE_JOB + job;
-                    Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
+                    UpdateStatus("STOPED");
+                    break;
                 }
-                else
+                this.tdsXu = TDSUtilities.getTDSInfo(tdsToken);
+                for (int j = 0; j < 2; j++)
                 {
-                    status = Const.FAIL_JOB + job;
-                    Utilities.updateColumn(Program.mainForm.getInfoTable(), id, 6, status);
+                    UpdateListJob(Const.LIST_TYPE_JOB[j]);
+                    getJobIdFromTDS(this.job_type);
+                    for (int i = 0; i < job_id.Count; i++)
+                    {
+                        UpdateStatus(Const.DOING_JOB + job_id[i]);
+                        OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken, job_id[i], type_of_job[i].ToLower());
+                        Thread.Sleep(10000);
+                        if (TDSUtilities.claimTDSXu(tdsToken, type_of_job[i].ToUpper(), job_id[i]))
+                        {
+                            UpdateStatus(Const.DONE_JOB + job_id[i]);
+                            Console.WriteLine($"COMPLETE|{job_id[i]}|{type_of_job[i]}|+{Const.LIST_XU_CLAIM_BY_JOB[j]}|{updateTdsXu(Const.LIST_XU_CLAIM_BY_JOB[j])}");
+                        }
+                        else
+                        {
+                            UpdateStatus(Const.FAIL_JOB + job_id[i]);
+                            Console.WriteLine("FAIL|" + job_id[i] + "|" + type_of_job[i]);
+                        }
+                        jobCompleted++;
+                        int waitForNextJob = Utilities.getTimeToWait();
+                        UpdateStatus(Const.DO_NEXT_JOB_IN + waitForNextJob + "s");
+                        Thread.Sleep(waitForNextJob * 1000);
+                        if (jobCompleted == Utilities.getJobDone())
+                        {
+                            int timeToHold = Utilities.getTimeToHold();
+                            UpdateStatus(Const.DO_ENOUGH_JOB + timeToHold + "s");
+                            resetJobDone();
+                            Thread.Sleep(timeToHold * 1000);
+                        }
+
+                    }
+                    job_id = new List<string>();
+                    type_of_job = new List<string>();
                 }
-                Thread.Sleep(1000);
             }
-            
         }
         public void setId(int id)
         {
@@ -110,7 +183,7 @@ namespace TDSCoinMaker.TDS
         {
             this.tdsToken = tdsToken;
         }
-        public void setFbToken(List<string> fbToken)
+        public void setFbToken(string fbToken)
         {
             this.fbToken = fbToken;
         }
@@ -134,10 +207,10 @@ namespace TDSCoinMaker.TDS
         {
             return proxy;
         }
-        
-        public void OpenBrowser(string url, int width, int height, string cookies, string urlPost)
+
+        public void OpenBrowser(string url, int width, int height, string cookies, string urlPost, string typeReaction)
         {
-            FBUtilities.OpenBrowser(url, width, height, cookies, urlPost);
+            FBUtilities.OpenBrowser(url, width, height, cookies, urlPost, typeReaction.ToLower());
         }
     }
 }
