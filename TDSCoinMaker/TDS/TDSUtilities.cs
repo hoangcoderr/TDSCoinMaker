@@ -5,6 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Windows.Forms;
+using TDSCoinMaker.FormEditting;
 
 namespace TDSCoinMaker.TDS
 {
@@ -13,17 +16,25 @@ namespace TDSCoinMaker.TDS
         public static int getTDSInfo(string token)
         {
             HttpClient client = new HttpClient();
-            var response = client.GetAsync($"https://traodoisub.com/api/?fields=profile&access_token={token}").Result;
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var responseContent = response.Content;
-                string responseString = response.Content.ReadAsStringAsync().Result;
-                var jsonObject = Newtonsoft.Json.Linq.JObject.Parse(responseString);
-                string user = (string)jsonObject["data"]["user"];
-                string xu = (string)jsonObject["data"]["xu"];
-                string xudie = (string)jsonObject["data"]["xudie"];
-                Console.WriteLine($"User: {user} has {xu} xu and {xudie} xudie");
-                return int.Parse(xu);
+                var response = client.GetAsync($"https://traodoisub.com/api/?fields=profile&access_token={token}").Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = response.Content;
+                    string responseString = response.Content.ReadAsStringAsync().Result;
+                    var jsonObject = Newtonsoft.Json.Linq.JObject.Parse(responseString);
+                    string user = (string)jsonObject["data"]["user"];
+                    string xu = (string)jsonObject["data"]["xu"];
+                    string xudie = (string)jsonObject["data"]["xudie"];
+                    Console.WriteLine($"User: {user} has {xu} xu and {xudie} xudie");
+                    return int.Parse(xu);
+                }
+                
+            }
+            catch
+            { 
+                MessageBox.Show(Const.NO_INTERNET_CONNECTION); 
             }
             return 0;
         }
@@ -41,7 +52,7 @@ namespace TDSCoinMaker.TDS
                     {
                         var responseContent = response.Content;
                         responseString = response.Content.ReadAsStringAsync().Result;
-                        //Console.WriteLine(responseString);
+                        Console.WriteLine(responseString);
                         JArray jsonArray = null;
                         jsonArray = JArray.Parse(responseString);
                         success = true;
@@ -70,6 +81,13 @@ namespace TDSCoinMaker.TDS
                                     types.Add(item["type"].ToString());
                                 }
                                 return (types, ids);
+                            case "reactcmt":
+                                foreach (var item in jsonArray)
+                                {
+                                    ids.Add(item["id"].ToString());
+                                    types.Add(item["type"].ToString());
+                                }
+                                return (types, ids);
                         }
                     }
                 }
@@ -80,7 +98,8 @@ namespace TDSCoinMaker.TDS
                     double t = (double)jsonObject["countdown"];
                     int timeCountDown = (int)t;
                     Console.WriteLine($"Waiting for: {timeCountDown} seconds to get new jobs");
-                    Task.Delay(timeCountDown * 1000).Wait();
+
+                    Thread.Sleep((timeCountDown + 1) * 1000);
                 }
             }
             return (new List<string>(), new List<string>());

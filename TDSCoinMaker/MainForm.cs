@@ -10,15 +10,15 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TDSCoinMaker.FormEditting;
 using TDSCoinMaker.TDS;
-
+using TDSCoinMaker.Logger;
 
 namespace TDSCoinMaker
 {
     public partial class MainForm : Form
     {
-       
+        public LogForm logForm;
 
-    public int getStartHold()
+        public int getStartHold()
         {
             return (int)nbrStartHold.Value;
         }
@@ -133,26 +133,46 @@ namespace TDSCoinMaker
             User user = users[e.RowIndex];
             if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn)
             {
-                //  MessageBox.Show("Content in this index of this row = " + infoTable.Rows[e.RowIndex].Cells[0].Value.ToString());
-                //  User user = users[e.RowIndex];
-                //  FBUtilities.OpenBrowser("https://www.facebook.com", 400, 600, user.getFbToken()[user.currentFbTokenIndex], "1231684234886409");
-                user.StartJob();
+                if (e.ColumnIndex.Equals(Const.ACTION_INDEX))
+                    user.StartJob();
+                else
+                    if (user.logForm is null)
+                    MessageBox.Show("This process have not opened");
+                    else
+                    logForm.Show();
             }
             else
             {
-                user.StopJob();
+                int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
+                txtFbToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value.ToString();
+                txtTDSToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value.ToString();
+                txtProxy.Text = infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value.ToString();
             }
         }
 
-        private void btnTest_Click(object sender, EventArgs e)
+        private async void btnTest_Click(object sender, EventArgs e)
         {
-            List<string> list1 = new List<string>();
+            /*  logForm = new LogForm("ID: " + this.id + " LOGGER");
+              logForm.Show();
+              logForm.AddLog("Test");
+  */
+            /*List<string> list1 = new List<string>();
             List<string> list2 = new List<string>();
-            (list1, list2) = TDSUtilities.getTDSJob("TDSQfiETMyVmdlNnI6IiclZXZzJCLiInclR2bjdmbh9GaiojIyV2c1Jye", "reaction");
+            (list1, list2) = TDSUtilities.getTDSJob("TDSQfiETMyVmdlNnI6IiclZXZzJCLiInclR2bjdmbh9GaiojIyV2c1Jye", "reactcmt");
             Console.WriteLine(Utilities.ToStringCustom(list1));
-            Console.WriteLine(Utilities.ToStringCustom(list2));
-            string cookies = "sb=B1QZZiHMdna-MeP9zWURAVIH;datr=B1QZZlb--U-cfPQ6RbKChXJR;wd=1872x1078;locale=vi_VN;ps_n=1;ps_l=1;c_user=100027816315772;xs=27%3Af6i30979g-3TDg%3A2%3A1718095082%3A-1%3A6172%3A%3AAcVGkaX5_naTsXH-Cm-NZkBi1hl9I_WLMeXAu2-bjA;fr=1Q220vr4bqFybnBzK.AWXs1NIu65LtLGgdVx4R660MFVQ.BmaR6b..AAA.0.0.BmaR6b.AWXBeIMr_-M;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1718165249123%2C%22v%22%3A1%7D;";
-            FBUtilities.OpenBrowser(Const.FACEBOOK_URL, 400, 600, cookies, "1297405301196668", "care".ToLower());
+            Console.WriteLine(Utilities.ToStringCustom(list2));*/
+            // string cookies = "sb=B1QZZiHMdna-MeP9zWURAVIH;datr=B1QZZlb--U-cfPQ6RbKChXJR;wd=1872x1078;locale=vi_VN;ps_n=1;ps_l=1;c_user=100027816315772;xs=27%3Af6i30979g-3TDg%3A2%3A1718095082%3A-1%3A6172%3A%3AAcVGkaX5_naTsXH-Cm-NZkBi1hl9I_WLMeXAu2-bjA;fr=1Q220vr4bqFybnBzK.AWXs1NIu65LtLGgdVx4R660MFVQ.BmaR6b..AAA.0.0.BmaR6b.AWXBeIMr_-M;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1718165249123%2C%22v%22%3A1%7D;";
+            // FBUtilities.OpenBrowser(Const.FACEBOOK_URL, 400, 600, cookies, "1297405301196668", "care".ToLower());
+            //IWebDriver driver = Utilities.SetupWebDriverWithProxy("116.110.101.27", "27434", "bestproxy.vn", "hoangdaica");
+
+            // Sử dụng driver như bình thường
+            //driver.Navigate().GoToUrl("https://whatismyipaddress.com/");
+
+            // Đóng driver khi hoàn thành
+            //driver.Quit();
+            string cookie = "sb=B1QZZiHMdna-MeP9zWURAVIH;datr=B1QZZlb--U-cfPQ6RbKChXJR;ps_n=1;ps_l=1;c_user=100027816315772;xs=33%3AJNhuRGyhBpha_w%3A2%3A1718699689%3A-1%3A6172%3A%3AAcWC-R2Ee7PEeN24oerzSFy1HxNidcS4QDe-rYQD7Q;fr=1YnUNhmBpIZvqo7Um.AWU6jamcipqoDp-UYwBuBmmPnfI.BmcUbm..AAA.0.0.BmcUbm.AWVZsiYX55k;wd=1920x945;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1718699753029%2C%22v%22%3A1%7D;m_page_voice=100027816315772;";
+            // await FBUtilities.ReactionPost(cookie, "1297405301196668", "sad", "");
+            //await FBUtilities.Test();
         }
 
         private void nbrStartHold_ValueChanged(object sender, EventArgs e)
@@ -178,6 +198,24 @@ namespace TDSCoinMaker
         private void nbrStopWaitingJob_ValueChanged(object sender, EventArgs e)
         {
             Utilities.SaveClientConfig(Const.CLIENT_PATH, this);
+        }
+
+        private void btnTest1_Click(object sender, EventArgs e)
+        {
+            logForm.AddLog("Random number + " + (new Random().Next()));
+        }
+
+        private void btnEdit_Click(object sender, EventArgs e)
+        {
+            //txtFbToken.Text = infoTable.Rows[1].Cells[1].Value.ToString();
+            if (isFilledData())
+            {
+                int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
+                infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value = txtFbToken.Text;
+                infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value = txtTDSToken.Text;
+                infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value = txtProxy.Text;
+                Utilities.SaveAccToFile(Const.ACCOUNT_PATH, infoTable);
+            }
         }
     }
 }

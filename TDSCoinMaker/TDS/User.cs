@@ -11,11 +11,12 @@ using TDSCoinMaker.FormEditting;
 using System.Net.NetworkInformation;
 using System.Data;
 using System.Linq.Expressions;
-
+using TDSCoinMaker.Logger;
 namespace TDSCoinMaker.TDS
 {
     public class User
     {
+        private bool isStart = false;
         private int id = -1;
         private string tdsToken = string.Empty;
         public string fbToken = string.Empty;
@@ -40,6 +41,8 @@ namespace TDSCoinMaker.TDS
 
         public int tdsXu = 0;
 
+        public LogForm logForm = new LogForm();
+
         private CancellationTokenSource cts = new CancellationTokenSource();
         public User(int id, string fbToken, string tdsToken, string job_type, List<string> job_id, string proxy, string status)
         {
@@ -63,8 +66,12 @@ namespace TDSCoinMaker.TDS
         }
         public void StartJob()
         {
-            // Run doJob in a Task, passing the CancellationToken
-            Task.Run(() => doJob(cts.Token), cts.Token);
+            Thread newThread = new Thread(() =>
+            {
+                doJob(cts.Token);
+            });
+
+            newThread.Start();
         }
         public void StopJob()
         {
@@ -118,6 +125,8 @@ namespace TDSCoinMaker.TDS
         {
             this.job_type = job_type;
             Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 3, job_type);
+            getJobIdFromTDS(this.job_type);
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 4, Utilities.ToStringCustom(job_id));
         }
         public void configAccToDoJob()
         {
@@ -126,10 +135,18 @@ namespace TDSCoinMaker.TDS
         public int updateTdsXu(int bonusXu)
         {
             this.tdsXu += bonusXu;
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, Const.TDS_XU_INDEX, tdsXu.ToString());
             return tdsXu;
         }
         public void doJob(CancellationToken cancellationToken)
         {
+            
+            Task.Run(() =>
+            {
+                logForm = new LogForm("ID: " + this.id + " LOGGER");
+                logForm.ShowDialog(); // Sử dụng ShowDialog để đảm bảo form được mở trong Task
+            });
+
             while (true)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -138,24 +155,28 @@ namespace TDSCoinMaker.TDS
                     break;
                 }
                 this.tdsXu = TDSUtilities.getTDSInfo(tdsToken);
-                for (int j = 0; j < 2; j++)
+                updateTdsXu(0);
+                for (int j = 0; j < 4; j++)
                 {
                     UpdateListJob(Const.LIST_TYPE_JOB[j]);
-                    getJobIdFromTDS(this.job_type);
+                   
+                    
                     for (int i = 0; i < job_id.Count; i++)
                     {
-                        UpdateStatus(Const.DOING_JOB + job_id[i]);
-                        OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken, job_id[i], type_of_job[i].ToLower());
-                        Thread.Sleep(10000);
+                        UpdateStatus(Const.DOING_JOB + type_of_job[i].ToUpper() + " " + job_id[i]);
+                        //OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken, job_id[i], type_of_job[i].ToLower(), proxy);
+                        ReactionPost(fbToken, job_id[i], type_of_job[i].ToLower(), proxy);
+                        Thread.Sleep(5000);
                         if (TDSUtilities.claimTDSXu(tdsToken, type_of_job[i].ToUpper(), job_id[i]))
                         {
                             UpdateStatus(Const.DONE_JOB + job_id[i]);
-                            Console.WriteLine($"COMPLETE|{job_id[i]}|{type_of_job[i]}|+{Const.LIST_XU_CLAIM_BY_JOB[j]}|{updateTdsXu(Const.LIST_XU_CLAIM_BY_JOB[j])}");
+                            
+                            logForm.AddLog($"COMPLETE|{job_id[i]}|{type_of_job[i]}|+{Const.LIST_XU_CLAIM_BY_JOB[j]}|{updateTdsXu(Const.LIST_XU_CLAIM_BY_JOB[j])}");
                         }
                         else
                         {
                             UpdateStatus(Const.FAIL_JOB + job_id[i]);
-                            Console.WriteLine("FAIL|" + job_id[i] + "|" + type_of_job[i]);
+                            logForm.AddLog("FAIL|" + job_id[i] + "|" + type_of_job[i]);
                         }
                         jobCompleted++;
                         int waitForNextJob = Utilities.getTimeToWait();
@@ -208,9 +229,14 @@ namespace TDSCoinMaker.TDS
             return proxy;
         }
 
-        public void OpenBrowser(string url, int width, int height, string cookies, string urlPost, string typeReaction)
+        public void OpenBrowser(string url, int width, int height, string cookies, string urlPost, string typeReaction, string proxy)
         {
-            FBUtilities.OpenBrowser(url, width, height, cookies, urlPost, typeReaction.ToLower());
+            FBUtilities.OpenBrowser(url, width, height, cookies, urlPost, typeReaction.ToLower(), proxy);
+        }
+        public async void ReactionPost(string cookie, string urlPost, string typeReaction, string proxy)
+        {
+            Console.WriteLine("Da truyen vao: " + $"{cookie}|{urlPost}|{typeReaction}");
+            await FBUtilities.ReactionPost(cookie, urlPost, typeReaction.ToLower(), proxy);
         }
     }
 }

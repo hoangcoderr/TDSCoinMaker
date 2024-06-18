@@ -29,17 +29,14 @@
         private void InitializeComponent()
         {
             this.infoTable = new System.Windows.Forms.DataGridView();
-            this.id = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Token_acc = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.TDS_Token = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Type_job = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.List_job = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Proxy = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Status = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.ActionButtuon = new System.Windows.Forms.DataGridViewButtonColumn();
             this.btnAdd = new System.Windows.Forms.Button();
             this.panel1 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.label11 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
+            this.nbrStopWaitingJob = new System.Windows.Forms.NumericUpDown();
+            this.nbrStartWaitingJob = new System.Windows.Forms.NumericUpDown();
             this.nbrJobDone = new System.Windows.Forms.NumericUpDown();
             this.nbrStopHold = new System.Windows.Forms.NumericUpDown();
             this.nbrStartHold = new System.Windows.Forms.NumericUpDown();
@@ -56,18 +53,25 @@
             this.label4 = new System.Windows.Forms.Label();
             this.btnRemove = new System.Windows.Forms.Button();
             this.btnTest = new System.Windows.Forms.Button();
-            this.nbrStartWaitingJob = new System.Windows.Forms.NumericUpDown();
-            this.nbrStopWaitingJob = new System.Windows.Forms.NumericUpDown();
-            this.label9 = new System.Windows.Forms.Label();
-            this.label10 = new System.Windows.Forms.Label();
-            this.label11 = new System.Windows.Forms.Label();
+            this.btnTest1 = new System.Windows.Forms.Button();
+            this.btnEdit = new System.Windows.Forms.Button();
+            this.id = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Token_acc = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.TDS_Token = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Type_job = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.List_job = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Proxy = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Status = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.TDS_Xu = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ActionButtuon = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.ShowLog = new System.Windows.Forms.DataGridViewButtonColumn();
             ((System.ComponentModel.ISupportInitialize)(this.infoTable)).BeginInit();
             this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrJobDone)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrStopHold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrStartHold)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).BeginInit();
             this.SuspendLayout();
             // 
             // infoTable
@@ -84,76 +88,20 @@
             this.List_job,
             this.Proxy,
             this.Status,
-            this.ActionButtuon});
+            this.TDS_Xu,
+            this.ActionButtuon,
+            this.ShowLog});
             this.infoTable.Location = new System.Drawing.Point(2, 392);
             this.infoTable.Name = "infoTable";
             this.infoTable.ReadOnly = true;
             this.infoTable.RowHeadersVisible = false;
-            this.infoTable.Size = new System.Drawing.Size(1317, 357);
+            this.infoTable.Size = new System.Drawing.Size(1421, 357);
             this.infoTable.TabIndex = 0;
             this.infoTable.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.infoTable_CellContentClick);
             // 
-            // id
-            // 
-            this.id.HeaderText = "Id";
-            this.id.Name = "id";
-            this.id.ReadOnly = true;
-            this.id.Width = 70;
-            // 
-            // Token_acc
-            // 
-            this.Token_acc.HeaderText = "Token_acc";
-            this.Token_acc.Name = "Token_acc";
-            this.Token_acc.ReadOnly = true;
-            this.Token_acc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.Token_acc.Width = 200;
-            // 
-            // TDS_Token
-            // 
-            this.TDS_Token.HeaderText = "TDS_Token";
-            this.TDS_Token.Name = "TDS_Token";
-            this.TDS_Token.ReadOnly = true;
-            this.TDS_Token.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.TDS_Token.Width = 200;
-            // 
-            // Type_job
-            // 
-            this.Type_job.HeaderText = "Type_job";
-            this.Type_job.Name = "Type_job";
-            this.Type_job.ReadOnly = true;
-            // 
-            // List_job
-            // 
-            this.List_job.HeaderText = "List_job";
-            this.List_job.Name = "List_job";
-            this.List_job.ReadOnly = true;
-            this.List_job.Width = 200;
-            // 
-            // Proxy
-            // 
-            this.Proxy.HeaderText = "Proxy";
-            this.Proxy.Name = "Proxy";
-            this.Proxy.ReadOnly = true;
-            // 
-            // Status
-            // 
-            this.Status.HeaderText = "Status";
-            this.Status.Name = "Status";
-            this.Status.ReadOnly = true;
-            this.Status.Width = 400;
-            // 
-            // ActionButtuon
-            // 
-            this.ActionButtuon.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.ActionButtuon.HeaderText = "Action";
-            this.ActionButtuon.Name = "ActionButtuon";
-            this.ActionButtuon.ReadOnly = true;
-            this.ActionButtuon.Resizable = System.Windows.Forms.DataGridViewTriState.True;
-            this.ActionButtuon.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
-            // 
             // btnAdd
             // 
-            this.btnAdd.Location = new System.Drawing.Point(1231, 360);
+            this.btnAdd.Location = new System.Drawing.Point(1316, 357);
             this.btnAdd.Name = "btnAdd";
             this.btnAdd.Size = new System.Drawing.Size(75, 23);
             this.btnAdd.TabIndex = 1;
@@ -187,6 +135,49 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(585, 224);
             this.panel2.TabIndex = 3;
+            // 
+            // label11
+            // 
+            this.label11.AutoSize = true;
+            this.label11.Location = new System.Drawing.Point(175, 48);
+            this.label11.Name = "label11";
+            this.label11.Size = new System.Drawing.Size(103, 13);
+            this.label11.TabIndex = 27;
+            this.label11.Text = "after complete a job!";
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(88, 48);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(35, 13);
+            this.label10.TabIndex = 26;
+            this.label10.Text = "s from";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(13, 48);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(29, 13);
+            this.label9.TabIndex = 25;
+            this.label9.Text = "Wait";
+            // 
+            // nbrStopWaitingJob
+            // 
+            this.nbrStopWaitingJob.Location = new System.Drawing.Point(128, 46);
+            this.nbrStopWaitingJob.Name = "nbrStopWaitingJob";
+            this.nbrStopWaitingJob.Size = new System.Drawing.Size(41, 20);
+            this.nbrStopWaitingJob.TabIndex = 24;
+            this.nbrStopWaitingJob.ValueChanged += new System.EventHandler(this.nbrStopWaitingJob_ValueChanged);
+            // 
+            // nbrStartWaitingJob
+            // 
+            this.nbrStartWaitingJob.Location = new System.Drawing.Point(41, 46);
+            this.nbrStartWaitingJob.Name = "nbrStartWaitingJob";
+            this.nbrStartWaitingJob.Size = new System.Drawing.Size(41, 20);
+            this.nbrStartWaitingJob.TabIndex = 23;
+            this.nbrStartWaitingJob.ValueChanged += new System.EventHandler(this.nbrStartWaitingJob_ValueChanged);
             // 
             // nbrJobDone
             // 
@@ -266,7 +257,7 @@
             // 
             // txtFbToken
             // 
-            this.txtFbToken.Location = new System.Drawing.Point(351, 361);
+            this.txtFbToken.Location = new System.Drawing.Point(358, 361);
             this.txtFbToken.Name = "txtFbToken";
             this.txtFbToken.Size = new System.Drawing.Size(221, 20);
             this.txtFbToken.TabIndex = 5;
@@ -325,54 +316,104 @@
             this.btnTest.UseVisualStyleBackColor = true;
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
-            // nbrStartWaitingJob
+            // btnTest1
             // 
-            this.nbrStartWaitingJob.Location = new System.Drawing.Point(41, 46);
-            this.nbrStartWaitingJob.Name = "nbrStartWaitingJob";
-            this.nbrStartWaitingJob.Size = new System.Drawing.Size(41, 20);
-            this.nbrStartWaitingJob.TabIndex = 23;
-            this.nbrStartWaitingJob.ValueChanged += new System.EventHandler(this.nbrStartWaitingJob_ValueChanged);
+            this.btnTest1.Location = new System.Drawing.Point(839, 299);
+            this.btnTest1.Name = "btnTest1";
+            this.btnTest1.Size = new System.Drawing.Size(228, 55);
+            this.btnTest1.TabIndex = 15;
+            this.btnTest1.Text = "Test";
+            this.btnTest1.UseVisualStyleBackColor = true;
+            this.btnTest1.Click += new System.EventHandler(this.btnTest1_Click);
             // 
-            // nbrStopWaitingJob
+            // btnEdit
             // 
-            this.nbrStopWaitingJob.Location = new System.Drawing.Point(128, 46);
-            this.nbrStopWaitingJob.Name = "nbrStopWaitingJob";
-            this.nbrStopWaitingJob.Size = new System.Drawing.Size(41, 20);
-            this.nbrStopWaitingJob.TabIndex = 24;
-            this.nbrStopWaitingJob.ValueChanged += new System.EventHandler(this.nbrStopWaitingJob_ValueChanged);
+            this.btnEdit.Location = new System.Drawing.Point(1235, 358);
+            this.btnEdit.Name = "btnEdit";
+            this.btnEdit.Size = new System.Drawing.Size(75, 23);
+            this.btnEdit.TabIndex = 16;
+            this.btnEdit.Text = "edit";
+            this.btnEdit.UseVisualStyleBackColor = true;
+            this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
             // 
-            // label9
+            // id
             // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(13, 48);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(29, 13);
-            this.label9.TabIndex = 25;
-            this.label9.Text = "Wait";
+            this.id.HeaderText = "Id";
+            this.id.Name = "id";
+            this.id.ReadOnly = true;
+            this.id.Width = 70;
             // 
-            // label10
+            // Token_acc
             // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(88, 48);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(35, 13);
-            this.label10.TabIndex = 26;
-            this.label10.Text = "s from";
+            this.Token_acc.HeaderText = "Cookies_acc";
+            this.Token_acc.Name = "Token_acc";
+            this.Token_acc.ReadOnly = true;
+            this.Token_acc.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.Token_acc.Width = 200;
             // 
-            // label11
+            // TDS_Token
             // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(175, 48);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(103, 13);
-            this.label11.TabIndex = 27;
-            this.label11.Text = "after complete a job!";
+            this.TDS_Token.HeaderText = "TDS_Token";
+            this.TDS_Token.Name = "TDS_Token";
+            this.TDS_Token.ReadOnly = true;
+            this.TDS_Token.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.TDS_Token.Width = 200;
+            // 
+            // Type_job
+            // 
+            this.Type_job.HeaderText = "Type_job";
+            this.Type_job.Name = "Type_job";
+            this.Type_job.ReadOnly = true;
+            // 
+            // List_job
+            // 
+            this.List_job.HeaderText = "List_job";
+            this.List_job.Name = "List_job";
+            this.List_job.ReadOnly = true;
+            this.List_job.Width = 200;
+            // 
+            // Proxy
+            // 
+            this.Proxy.HeaderText = "Proxy";
+            this.Proxy.Name = "Proxy";
+            this.Proxy.ReadOnly = true;
+            // 
+            // Status
+            // 
+            this.Status.HeaderText = "Status";
+            this.Status.Name = "Status";
+            this.Status.ReadOnly = true;
+            this.Status.Width = 300;
+            // 
+            // TDS_Xu
+            // 
+            this.TDS_Xu.HeaderText = "TDS_Xu";
+            this.TDS_Xu.Name = "TDS_Xu";
+            this.TDS_Xu.ReadOnly = true;
+            // 
+            // ActionButtuon
+            // 
+            this.ActionButtuon.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.ActionButtuon.HeaderText = "Action";
+            this.ActionButtuon.Name = "ActionButtuon";
+            this.ActionButtuon.ReadOnly = true;
+            this.ActionButtuon.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.ActionButtuon.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
+            // 
+            // ShowLog
+            // 
+            this.ShowLog.HeaderText = "Logger";
+            this.ShowLog.Name = "ShowLog";
+            this.ShowLog.ReadOnly = true;
+            this.ShowLog.Width = 50;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1318, 749);
+            this.ClientSize = new System.Drawing.Size(1425, 749);
+            this.Controls.Add(this.btnEdit);
+            this.Controls.Add(this.btnTest1);
             this.Controls.Add(this.btnTest);
             this.Controls.Add(this.btnRemove);
             this.Controls.Add(this.label4);
@@ -393,11 +434,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.infoTable)).EndInit();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrJobDone)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrStopHold)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nbrStartHold)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nbrStartWaitingJob)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nbrStopWaitingJob)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -415,14 +456,6 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox txtProxy;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.DataGridViewTextBoxColumn id;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Token_acc;
-        private System.Windows.Forms.DataGridViewTextBoxColumn TDS_Token;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Type_job;
-        private System.Windows.Forms.DataGridViewTextBoxColumn List_job;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Proxy;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Status;
-        private System.Windows.Forms.DataGridViewButtonColumn ActionButtuon;
         private System.Windows.Forms.Button btnRemove;
         private System.Windows.Forms.Button btnTest;
         private System.Windows.Forms.Label label3;
@@ -438,6 +471,18 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.NumericUpDown nbrStopWaitingJob;
         private System.Windows.Forms.NumericUpDown nbrStartWaitingJob;
+        private System.Windows.Forms.Button btnTest1;
+        private System.Windows.Forms.Button btnEdit;
+        private System.Windows.Forms.DataGridViewTextBoxColumn id;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Token_acc;
+        private System.Windows.Forms.DataGridViewTextBoxColumn TDS_Token;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Type_job;
+        private System.Windows.Forms.DataGridViewTextBoxColumn List_job;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Proxy;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Status;
+        private System.Windows.Forms.DataGridViewTextBoxColumn TDS_Xu;
+        private System.Windows.Forms.DataGridViewButtonColumn ActionButtuon;
+        private System.Windows.Forms.DataGridViewButtonColumn ShowLog;
     }
 }
 

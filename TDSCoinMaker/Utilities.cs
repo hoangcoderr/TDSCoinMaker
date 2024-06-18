@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TDSCoinMaker.TDS;
 using System.IO;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome.ChromeDriverExtensions;
 
 namespace TDSCoinMaker
 {
@@ -155,6 +159,55 @@ namespace TDSCoinMaker
             SaveAccToFile("config\\account.ini", dgv);
             Program.mainForm.setInfoTable(dgv);
         }
+        public static IWebDriver SetupWebDriverWithProxy(string proxyHost, string proxyPort, string proxyUser, string proxyPass)
+        {
+            // Cấu hình tùy chọn Chrome để sử dụng proxy
+            var options = new ChromeOptions();
 
+            // Add your HTTP-Proxy
+            options.AddHttpProxy(proxyHost, int.Parse(proxyPort), proxyUser, proxyPass);
+            // Tạo trình điều khiển
+            IWebDriver driver = new ChromeDriver(options);
+
+            // Gọi hàm xác thực proxy
+            
+            return driver;
+        }
+        public static string[] analyzeProxy(string proxy)
+        {
+            string[] arr = proxy.Split(':');
+            return arr;
+        }
+        public static void ProxyAuthentication(IWebDriver driver, string proxyUser, string proxyPass)
+        {
+            driver.Navigate().GoToUrl("https://whatismyipaddress.com/");
+
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+            wait.Until(CustomExpectedConditions.AlertIsPresent());
+
+            IAlert alert = driver.SwitchTo().Alert();
+            alert.SendKeys(proxyUser + System.Windows.Forms.Keys.Tab + proxyPass);
+            alert.Accept();
+        }
+    
+   
+}
+    public static class CustomExpectedConditions
+    {
+        public static Func<IWebDriver, bool> AlertIsPresent()
+        {
+            return driver =>
+            {
+                try
+                {
+                    driver.SwitchTo().Alert();
+                    return true;
+                }
+                catch (NoAlertPresentException)
+                {
+                    return false;
+                }
+            };
+        }
     }
 }

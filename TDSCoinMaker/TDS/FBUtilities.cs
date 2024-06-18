@@ -9,8 +9,17 @@ using OpenQA.Selenium.Chrome;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium.Support.UI;
-using System.CodeDom.Compiler;
 using OpenQA.Selenium.Interactions;
+using OpenQA.Selenium.Chrome.ChromeDriverExtensions;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Windows.Forms;
+using HtmlAgilityPack;
+using System.IO;
+using System.Net;
+using RestSharp;
+using TDSCoinMaker.FormEditting;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
 
 
 namespace TDSCoinMaker.TDS
@@ -91,7 +100,7 @@ namespace TDSCoinMaker.TDS
                         action.MoveToElement(likeButton).Perform();
 
                         // Đợi menu reactions hiện ra
-                        Thread.Sleep(2000); // Đợi 2 giây để menu hiện ra, có thể điều chỉnh nếu cần
+                        Thread.Sleep(3000); // Đợi 3 giây để menu hiện ra, có thể điều chỉnh nếu cần
 
                         // Chọn reaction dựa vào typeReaction
                         IWebElement reactionButton = null;
@@ -129,7 +138,7 @@ namespace TDSCoinMaker.TDS
                         {
                             // Ấn nút bằng JavaScript
                             //((IJavaScriptExecutor)webDriver).ExecuteScript("arguments[0].click();", reactionButton);
-                             reactionButton.Click();
+                            reactionButton.Click();
                         }
                     }
                 }
@@ -153,10 +162,12 @@ namespace TDSCoinMaker.TDS
                 }
             }
             Thread.Sleep(500);
+            webDriver.Navigate().Refresh();
+            Thread.Sleep(1000);
             webDriver.Quit();
         }
 
-        public static void OpenBrowser(string url, int width, int height, string cookies, string urlPost, string typeReaction)
+        public static void OpenBrowser(string url, int width, int height, string cookies, string urlPost, string typeReaction, string proxy)
         {
             string[] atr = cookiesGetter(cookies);
             string cUserCookieValue = atr[0];
@@ -168,7 +179,12 @@ namespace TDSCoinMaker.TDS
             ChromeOptions options = new ChromeOptions();
             //options.AddArgument("--headless");
             options.AddArgument("--disable-notifications");
-
+            // Add your HTTP-Proxy
+            if (proxy != null && proxy != "")
+            {
+                string[] proxyArray = Utilities.analyzeProxy(proxy);
+                options.AddHttpProxy(proxyArray[0], int.Parse(proxyArray[1]), proxyArray[2], proxyArray[3]);
+            }
             IWebDriver chromeDriver = new ChromeDriver(service, options);
             chromeDriver.Manage().Window.Size = new System.Drawing.Size(width, height);
             chromeDriver.Navigate().GoToUrl(url);
@@ -205,6 +221,145 @@ namespace TDSCoinMaker.TDS
                 return readyState.Equals("complete");
             });
             ReactionPost(chromeDriver, typeReaction);
+        }
+        //
+        public static async Task ReactionPost(string cookie, string urlPost, string typeReaction, string proxy)
+        {
+            string urlReaction = await getReactionLink(cookie, urlPost);
+            var client = new RestClient("https://mbasic.facebook.com");
+            var request = new RestRequest(urlReaction);
+            headerAdder(request, cookie);
+
+            var response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
+            {
+                string htmlContent = response.Content;
+                //Console.WriteLine(htmlContent);
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(htmlContent);
+
+                var typeReactions = doc.DocumentNode
+                                  .SelectNodes("//a[contains(@href, '/ufi/reaction')]")
+                                  .Select(node => node.Attributes["href"].Value.Replace("amp;", "").TrimStart('/'))
+                                  .ToList();
+                //print reactionUrls
+
+                string urlResponse = string.Empty;
+                switch (typeReaction)
+                {
+                    case "like":
+
+                        urlResponse = typeReactions[Const.LIKE_BUTTON_INDEX];
+                        break;
+                    case "love":
+                        urlResponse = typeReactions[Const.LOVE_BUTTON_INDEX];
+                        break;
+                    case "care":
+                        urlResponse = typeReactions[Const.CARE_BUTTON_INDEX];
+                        break;
+                    case "haha":
+                        urlResponse = typeReactions[Const.HAHA_BUTTON_INDEX];
+                        break;
+                    case "wow":
+                        urlResponse = typeReactions[Const.WOW_BUTTON_INDEX];
+                        break;
+                    case "sad":
+                        urlResponse = typeReactions[Const.SAD_BUTTON_INDEX];
+                        break;
+                    case "angry":
+                        urlResponse = typeReactions[Const.ANGRY_BUTTON_INDEX];
+                        break;
+                    default:
+                        throw new ArgumentException("Invalid reaction type");
+                }
+                var clientToResponse = new RestClient("https://mbasic.facebook.com");
+                var requestToResponse = new RestRequest(urlResponse);
+                headerAdder(requestToResponse, cookie);
+                var responseAfterReaction = await clientToResponse.ExecuteAsync(requestToResponse);
+                File.WriteAllText("response.html", responseAfterReaction.Content);
+                if (checkBlock(responseAfterReaction.Content))
+                {
+                    Console.WriteLine("Block");
+                }
+                else
+                {
+                    Console.WriteLine("Not Block");
+                }
+            }
+
+            //open file response.html
+
+        }
+        public static void headerAdder(RestRequest request, string cookie)
+        {
+            request.AddHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+            request.AddHeader("accept-language", "en-US,en;q=0.9");
+            request.AddHeader("cookie", cookie);
+            request.AddHeader("dpr", "1");
+            request.AddHeader("priority", "u=0, i");
+            request.AddHeader("sec-ch-prefers-color-scheme", "dark");
+            request.AddHeader("sec-ch-ua", "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"");
+            request.AddHeader("sec-ch-ua-full-version-list", "\"Not/A)Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"126.0.6478.61\", \"Google Chrome\";v=\"126.0.6478.61\"");
+            request.AddHeader("sec-ch-ua-mobile", "?0");
+            request.AddHeader("sec-ch-ua-model", "\"\"");
+            request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+            request.AddHeader("sec-ch-ua-platform-version", "\"15.0.0\"");
+            request.AddHeader("sec-fetch-dest", "document");
+            request.AddHeader("sec-fetch-mode", "navigate");
+            request.AddHeader("sec-fetch-site", "same-origin");
+            request.AddHeader("sec-fetch-user", "?1");
+            request.AddHeader("upgrade-insecure-requests", "1");
+            request.AddHeader("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+            request.AddHeader("viewport-width", "1365");
+        }
+        public static async Task<string> getReactionLink(string cookie, string urlPost)
+        {
+            try
+            {
+                var client = new RestClient("https://mbasic.facebook.com");
+                var request = new RestRequest(urlPost);
+                headerAdder(request, cookie);
+                var response = await client.ExecuteAsync(request);
+                //File.WriteAllText("response.html", response.Content);
+                string htmlContent = response.Content;
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(htmlContent);
+                var reactionPickerNode = doc.DocumentNode.SelectSingleNode("//a[contains(@href, '/reactions/picker/?')]");
+                string reactionPickerUrl = string.Empty;
+                if (reactionPickerNode != null)
+                {
+                    reactionPickerUrl = reactionPickerNode.GetAttributeValue("href", string.Empty).TrimStart('/').Replace("amp;", "");
+                    //Console.WriteLine(reactionPickerUrl);
+                }
+                return reactionPickerUrl;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+            }
+            return "";
+        }
+        public static bool checkBlock(string check)
+        {
+            try
+            {
+                if (check.Contains("<div class=\"bn bo bp j bq\"><span class=\"br\"><div>"))
+                {
+                    string splitCheck = check.Split(new string[] { "<div class=\"bn bo bp j bq\"><span class=\"br\"><div>" }, StringSplitOptions.None)[1]
+                                            .Split(new string[] { "<br /><br />" }, StringSplitOptions.None)[0];
+                    Console.WriteLine(splitCheck);
+                    return splitCheck.Contains("specific content");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return false;
+            }
         }
     }
 }
