@@ -10,24 +10,59 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome.ChromeDriverExtensions;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using TDSCoinMaker.FormEditting;
 
 namespace TDSCoinMaker
 {
     public class Utilities
     {
+        public static async Task<bool> TestProxy(WebProxy proxy)
+        {
+            try
+            {
+                var httpClientHandler = new HttpClientHandler()
+                {
+                    Proxy = proxy,
+                    UseProxy = true,
+                };
+
+                using (var httpClient = new HttpClient(httpClientHandler))
+                {
+                    // Đặt thời gian chờ tối đa cho yêu cầu
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+
+                    // Thử gửi một yêu cầu GET đến một URL. Ví dụ: http://www.example.com
+                    var response = await httpClient.GetAsync("http://www.example.com");
+
+                    // Kiểm tra xem phản hồi có thành công không
+                    return response.IsSuccessStatusCode;
+                }
+            }
+            catch
+            {
+
+                return false;
+            }
+        }
         public static string ToStringCustom(List<string> list)
         {
             StringBuilder sb = new StringBuilder();
-            foreach (var item in list)
-            {
-                sb.Append(item);
-                sb.Append(", ");
-            }
+            if (list != null)
+                foreach (var item in list)
+                {
+                    sb.Append(item);
+                    sb.Append(", ");
+                }
             return sb.ToString().TrimEnd(',', ' ');
         }
         public static void addDataToTable(DataGridView table, User user)
         {
             table.Rows.Add(user.getId(), user.getFbToken(), user.getTdsToken(), user.getJobType(), Utilities.ToStringCustom(user.getJobId()).ToString(), user.getProxy(), user.getStatus());
+            // Thêm cột nút "Edit"
+            
             SaveAccToFile("config\\account.ini", table);
         }
         public static bool isAvaiableToken(DataGridView dgv, string checkToken, int index)
@@ -57,12 +92,31 @@ namespace TDSCoinMaker
                     addDataToTable(dgv, user);
                     MainForm.users.Add(user);
                 }
+                for (int i = 0; i < dgv.RowCount; i++)
+                {
+                    dgv.Rows[i].Cells[Const.ACTION_INDEX].Value = "Start";
+                }
             }
+            
             else
             {
                 MessageBox.Show("Account file not found, create new one!");
                 //create new file if not found
                 File.Create(path).Close();
+            }
+        }
+        public static void UpdateUser(int id, DataGridView dgv)
+        {
+            User user = MainForm.users.Find(x => x.getId() == id);
+            foreach (DataGridViewRow row in dgv.Rows)
+            {
+                if (row.Cells[0].Value != null && row.Cells[0].Value.ToString().Equals(id.ToString()))
+                {
+                    user.setFbToken(row.Cells[1].Value.ToString());
+                    user.setTdsToken(row.Cells[2].Value.ToString());
+                    user.setProxy(row.Cells[5].Value.ToString());
+                    break;
+                }
             }
         }
         public static void LoadClientConfig(string path, MainForm mainform)
@@ -89,7 +143,7 @@ namespace TDSCoinMaker
         {
             using (StreamWriter sw = new StreamWriter(path))
             {
-                sw.Write(mainform.getStartHold().ToString() + "|" + mainform.getStopHold() +"|"+ mainform.getJobDone() + "|" + mainform.getStartWaitingJob() + "|" + mainform.getStopWaitingJob());
+                sw.Write(mainform.getStartHold().ToString() + "|" + mainform.getStopHold() + "|" + mainform.getJobDone() + "|" + mainform.getStartWaitingJob() + "|" + mainform.getStopWaitingJob());
                 sw.Close();
             }
         }
@@ -109,13 +163,38 @@ namespace TDSCoinMaker
         }
         public static void SaveAccToFile(string path, DataGridView dgv)
         {
-            using (StreamWriter sw = new StreamWriter(path))
+            // Name of the mutex should be unique to avoid conflicts with other applications
+            string mutexName = "Global\\TDSCoinMakerSaveAccToFileMutex";
+            using (Mutex mutex = new Mutex(false, mutexName))
             {
-                foreach (DataGridViewRow row in dgv.Rows)
+                try
                 {
-                    if (row.Cells[0].Value != null)
+                    // Wait until it is safe to enter, with a timeout (e.g., 5 seconds)
+                    if (mutex.WaitOne(TimeSpan.FromSeconds(5)))
                     {
-                        sw.WriteLine(row.Cells[0].Value.ToString() + "|" + row.Cells[1].Value.ToString() + "|" + row.Cells[2].Value.ToString() + "|" + row.Cells[3].Value.ToString() + "|" + row.Cells[4].Value.ToString() + "|" + row.Cells[5].Value.ToString() + "|" + row.Cells[6].Value.ToString());
+                        using (StreamWriter sw = new StreamWriter(path))
+                        {
+                            foreach (DataGridViewRow row in dgv.Rows)
+                            {
+                                if (row.Cells[0].Value != null)
+                                {
+                                    sw.WriteLine(row.Cells[0].Value.ToString() + "|" + row.Cells[1].Value.ToString() + "|" + row.Cells[2].Value.ToString() + "|" + row.Cells[3].Value.ToString() + "|" + row.Cells[4].Value.ToString() + "|" + row.Cells[5].Value.ToString() + "|" + row.Cells[6].Value.ToString());
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Handle the case when the mutex could not be acquired within the timeout
+                        Console.WriteLine("Could not acquire mutex within timeout.");
+                    }
+                }
+                finally
+                {
+                    // Always release the mutex if it was acquired
+                    if (mutex.WaitOne(0))
+                    {
+                        mutex.ReleaseMutex();
                     }
                 }
             }
@@ -156,8 +235,11 @@ namespace TDSCoinMaker
         public static void updateColumn(DataGridView dgv, int indexRow, int indexColumn, string value)
         {
             dgv.Rows[indexRow].Cells[indexColumn].Value = value;
-            SaveAccToFile("config\\account.ini", dgv);
-            Program.mainForm.setInfoTable(dgv);
+            if (indexColumn != 6)
+            {
+                SaveAccToFile("config\\account.ini", dgv);
+                Program.mainForm.setInfoTable(dgv);
+            }
         }
         public static IWebDriver SetupWebDriverWithProxy(string proxyHost, string proxyPort, string proxyUser, string proxyPass)
         {
@@ -170,7 +252,7 @@ namespace TDSCoinMaker
             IWebDriver driver = new ChromeDriver(options);
 
             // Gọi hàm xác thực proxy
-            
+
             return driver;
         }
         public static string[] analyzeProxy(string proxy)
@@ -189,9 +271,9 @@ namespace TDSCoinMaker
             alert.SendKeys(proxyUser + System.Windows.Forms.Keys.Tab + proxyPass);
             alert.Accept();
         }
-    
-   
-}
+
+
+    }
     public static class CustomExpectedConditions
     {
         public static Func<IWebDriver, bool> AlertIsPresent()

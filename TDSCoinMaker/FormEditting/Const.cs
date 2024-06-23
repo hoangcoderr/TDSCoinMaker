@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,8 +20,8 @@ namespace TDSCoinMaker.FormEditting
         public static string FAIL_JOB = "Fail Job ";
         public static string DO_NEXT_JOB_IN = "Do next job in ";
         public static string DO_ENOUGH_JOB = "Do enough job, do next job at ";
-        public static string[] LIST_TYPE_JOB = { "like", "reaction", "reaction", "like"};
-        public static int[] LIST_XU_CLAIM_BY_JOB = { 300, 400, 400, 300 };
+        public static string[] LIST_TYPE_JOB = {"reaction", "like", "like", "like", "likevip", "like", "like", "like" , "reaction"};
+        public static int[] LIST_XU_CLAIM_BY_JOB = { 400, 300, 300, 300, 600, 300, 300, 300, 400 };
         public static int TDS_XU_INDEX = 7;
         public static int FB_TOKEN_INDEX = 1;
         public static int TDS_TOKEN_INDEX = 2;
@@ -28,6 +29,7 @@ namespace TDSCoinMaker.FormEditting
         public static int ACTION_INDEX = 8;
         public static int PROXY_INDEX = 5;
         public static string NO_INTERNET_CONNECTION = "No internet connection";
+        public static string DID_ENOUGH_JOB = "Did enough job";
         public static int LIKE_BUTTON_INDEX = 0;
         public static int LOVE_BUTTON_INDEX = 1;
         public static int CARE_BUTTON_INDEX = 2;
@@ -35,5 +37,20 @@ namespace TDSCoinMaker.FormEditting
         public static int WOW_BUTTON_INDEX = 4;
         public static int SAD_BUTTON_INDEX = 5;
         public static int ANGRY_BUTTON_INDEX = 6;
+        public static string START = "Start";
+        public static string STOP = "Stop";
+        public static string PAUSE = "Pause";
+        public static string RESUME = "Resume";
+        public static string OPEN = "Open";
+        public static string CLOSE = "Close";
+        public static string DOING_LAST_JOB = "Doing last job to stop";
+        public static int SUCCESSFUL_TYPE_LOG = 0;
+        public static int FAIL_TYPE_LOG = 1;
+        public static int ACCOUNT_TYPE_LOG = 2;
+        public static WebProxy PROXY_TO_GET_URL = new WebProxy
+        {
+            Address = new Uri($"http://203.175.96.39:31423"), // Ensure the address includes a scheme
+            Credentials = new NetworkCredential("hoangkv", "kvhoang") // Proxy credentials
+        };
     }
 }

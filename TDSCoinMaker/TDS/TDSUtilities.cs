@@ -8,12 +8,13 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using TDSCoinMaker.FormEditting;
+using TDSCoinMaker.Logger;
 
 namespace TDSCoinMaker.TDS
 {
     public class TDSUtilities
     {
-        public static int getTDSInfo(string token)
+        public static int getTDSInfo(string token, LogForm logForm)
         {
             HttpClient client = new HttpClient();
             try
@@ -27,19 +28,23 @@ namespace TDSCoinMaker.TDS
                     string user = (string)jsonObject["data"]["user"];
                     string xu = (string)jsonObject["data"]["xu"];
                     string xudie = (string)jsonObject["data"]["xudie"];
-                    Console.WriteLine($"User: {user} has {xu} xu and {xudie} xudie");
+                    Console.WriteLine($"User: {user} Xu: {xu} XuDie: {xudie}");
+                    logForm.Log($"{user}|{xu}|{xudie}", System.Drawing.Color.PaleGreen);
                     return int.Parse(xu);
                 }
-                
+
             }
-            catch
-            { 
-                MessageBox.Show(Const.NO_INTERNET_CONNECTION); 
+            //catch the http request exception
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return 0;
             }
             return 0;
         }
-        public static (List<String>, List<string>) getTDSJob(string token, string type)
+        public static (List<String>, List<string>) getTDSJob(string token, string type, User user)
         {
+           
             HttpClient client = new HttpClient();
             bool success = false;
             string responseString = string.Empty;
@@ -95,11 +100,19 @@ namespace TDSCoinMaker.TDS
                 {
                     //Console.WriteLine(responseString);
                     var jsonObject = Newtonsoft.Json.Linq.JObject.Parse(responseString);
-                    double t = (double)jsonObject["countdown"];
-                    int timeCountDown = (int)t;
-                    Console.WriteLine($"Waiting for: {timeCountDown} seconds to get new jobs");
-
-                    Thread.Sleep((timeCountDown + 1) * 1000);
+                    try
+                    {
+                        double t = (double)jsonObject["countdown"];
+                        int timeCountDown = (int)t;
+                        Console.WriteLine($"Waiting for: {timeCountDown} seconds to get new jobs");
+                        Thread.Sleep((timeCountDown + 1) * 1000);
+                    }
+                    catch
+                    {
+                        user.UpdateStatus("Full Mission: " + type.ToUpper());
+                        Console.WriteLine("Full Mission");
+                        return (null, null);
+                    }
                 }
             }
             return (new List<string>(), new List<string>());

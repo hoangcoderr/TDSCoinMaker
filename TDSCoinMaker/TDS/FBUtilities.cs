@@ -20,6 +20,7 @@ using System.Net;
 using RestSharp;
 using TDSCoinMaker.FormEditting;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using System.Text.RegularExpressions;
 
 
 namespace TDSCoinMaker.TDS
@@ -223,72 +224,158 @@ namespace TDSCoinMaker.TDS
             ReactionPost(chromeDriver, typeReaction);
         }
         //
-        public static async Task ReactionPost(string cookie, string urlPost, string typeReaction, string proxy)
+        public static async Task<string> ReactionPost(string cookie, string urlPost, string typeReaction, WebProxy proxy)
         {
-            string urlReaction = await getReactionLink(cookie, urlPost);
-            var client = new RestClient("https://mbasic.facebook.com");
+            RestClient client = null;
+            string urlReaction = string.Empty;
+
+            if (proxy != null)
+            {
+
+                if (await TestProxy(proxy) == false) return "proxy error";
+                var options = new RestClientOptions("https://mbasic.facebook.com")
+                {
+                    Proxy = proxy
+                };
+                client = new RestClient(options);
+                urlReaction = await getReactionLink(cookie, urlPost, proxy);
+            }
+            else
+            {
+                urlReaction = await getReactionLink(cookie, urlPost);
+                client = new RestClient("https://mbasic.facebook.com");
+            }
+
+            if (urlReaction == null || urlReaction.Equals(string.Empty)) return "invalid";
             var request = new RestRequest(urlReaction);
             headerAdder(request, cookie);
 
             var response = await client.ExecuteAsync(request);
             if (response.IsSuccessful)
             {
-                string htmlContent = response.Content;
-                //Console.WriteLine(htmlContent);
-                var doc = new HtmlAgilityPack.HtmlDocument();
-                doc.LoadHtml(htmlContent);
-
-                var typeReactions = doc.DocumentNode
-                                  .SelectNodes("//a[contains(@href, '/ufi/reaction')]")
-                                  .Select(node => node.Attributes["href"].Value.Replace("amp;", "").TrimStart('/'))
-                                  .ToList();
-                //print reactionUrls
-
-                string urlResponse = string.Empty;
-                switch (typeReaction)
+                try
                 {
-                    case "like":
+                    string htmlContent = response.Content;
+                    //File.WriteAllText("response.html", htmlContent);
+                    var doc = new HtmlAgilityPack.HtmlDocument();
+                    doc.LoadHtml(htmlContent);
 
-                        urlResponse = typeReactions[Const.LIKE_BUTTON_INDEX];
-                        break;
-                    case "love":
-                        urlResponse = typeReactions[Const.LOVE_BUTTON_INDEX];
-                        break;
-                    case "care":
-                        urlResponse = typeReactions[Const.CARE_BUTTON_INDEX];
-                        break;
-                    case "haha":
-                        urlResponse = typeReactions[Const.HAHA_BUTTON_INDEX];
-                        break;
-                    case "wow":
-                        urlResponse = typeReactions[Const.WOW_BUTTON_INDEX];
-                        break;
-                    case "sad":
-                        urlResponse = typeReactions[Const.SAD_BUTTON_INDEX];
-                        break;
-                    case "angry":
-                        urlResponse = typeReactions[Const.ANGRY_BUTTON_INDEX];
-                        break;
-                    default:
-                        throw new ArgumentException("Invalid reaction type");
+                    var typeReactions = doc.DocumentNode
+                                      .SelectNodes("//a[contains(@href, '/ufi/reaction')]")
+                                      .Select(node => node.Attributes["href"].Value.Replace("amp;", "").TrimStart('/'))
+                                      .ToList();
+                    //print reactionUrls
+
+                    string urlResponse = string.Empty;
+                    switch (typeReaction)
+                    {
+                        case "like":
+
+                            urlResponse = typeReactions[Const.LIKE_BUTTON_INDEX];
+                            break;
+                        case "likevip":
+                            urlResponse = typeReactions[Const.LIKE_BUTTON_INDEX];
+                            break;
+                        case "love":
+                            urlResponse = typeReactions[Const.LOVE_BUTTON_INDEX];
+                            break;
+                        case "care":
+                            urlResponse = typeReactions[Const.CARE_BUTTON_INDEX];
+                            break;
+                        case "haha":
+                            urlResponse = typeReactions[Const.HAHA_BUTTON_INDEX];
+                            break;
+                        case "wow":
+                            urlResponse = typeReactions[Const.WOW_BUTTON_INDEX];
+                            break;
+                        case "sad":
+                            urlResponse = typeReactions[Const.SAD_BUTTON_INDEX];
+                            break;
+                        case "angry":
+                            urlResponse = typeReactions[Const.ANGRY_BUTTON_INDEX];
+                            break;
+                        default:
+                            throw new ArgumentException("Invalid reaction type");
+                    }
+                    var clientToResponse = new RestClient("https://mbasic.facebook.com");
+                    var requestToResponse = new RestRequest(urlResponse);
+
+                    headerAdder(requestToResponse, cookie);
+                    var responseAfterReaction = await clientToResponse.ExecuteAsync(requestToResponse);
+                    //File.WriteAllText("response.html", responseAfterReaction.Content);
+                    if (checkBlock(responseAfterReaction.Content))
+                    {
+                        Console.WriteLine("Acc died");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Acc still alive");
+                    }
+
                 }
-                var clientToResponse = new RestClient("https://mbasic.facebook.com");
-                var requestToResponse = new RestRequest(urlResponse);
-                headerAdder(requestToResponse, cookie);
-                var responseAfterReaction = await clientToResponse.ExecuteAsync(requestToResponse);
-                File.WriteAllText("response.html", responseAfterReaction.Content);
-                if (checkBlock(responseAfterReaction.Content))
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Block");
+                    Console.WriteLine($"Exception at ReactionPost: {ex.Message}");
                 }
-                else
-                {
-                    Console.WriteLine("Not Block");
-                }
+                //open file response.html
             }
+            return "success";
+        }
+        public static async Task<bool> isCookieAlive(string cookie)
+        {
+            Console.WriteLine("Called 1 agrument");
+            var client = new RestClient("https://mbasic.facebook.com");
+            var request = new RestRequest(cookiesGetter(cookie)[0]);
+            headerAdder(request, cookie);
+            var response = await client.ExecuteAsync(request);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(response.Content);
+            var titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
 
-            //open file response.html
+            if (titleNode != null)
+            {
+                string titleText = titleNode.InnerText;
+                if (titleText.Contains("Facebook"))
+                {
+                    return false;
+                }
+                Console.WriteLine("Cookie alive: " + titleText);
+                return true;
+            }
+            return false;
+        }
+        public static async Task<bool> isCookieAlive(string cookie, WebProxy webProxy)
+        {
+            Console.WriteLine("Called 2 arguments of isCookieAlive");
+            if (await TestProxy(webProxy) == false)
+            {
+                Console.WriteLine("Proxy error at check Acc");
+                return false;
+            }
+            var options = new RestClientOptions("https://mbasic.facebook.com")
+            {
+                Proxy = webProxy
+            };
 
+            var client = new RestClient(options);
+            var request = new RestRequest(cookiesGetter(cookie)[0]);
+            headerAdder(request, cookie);
+            var response = await client.ExecuteAsync(request);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(response.Content);
+            //File.WriteAllText("response.html", response.Content);
+            var titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
+            if (titleNode != null)
+            {
+                string titleText = titleNode.InnerText;
+                if (titleText.Contains("Facebook"))
+                {
+                    return false;
+                }
+                Console.WriteLine("Cookie alive: " + titleText);
+                return true;
+            }
+            return false;
         }
         public static void headerAdder(RestRequest request, string cookie)
         {
@@ -316,11 +403,13 @@ namespace TDSCoinMaker.TDS
         {
             try
             {
+                string urlFB = await getFacebookIdPost(urlPost);
+                if (urlFB == null) return null;
                 var client = new RestClient("https://mbasic.facebook.com");
-                var request = new RestRequest(urlPost);
+                var request = new RestRequest(urlFB);
                 headerAdder(request, cookie);
                 var response = await client.ExecuteAsync(request);
-                //File.WriteAllText("response.html", response.Content);
+               // File.WriteAllText("response1.html", response.Content);
                 string htmlContent = response.Content;
                 var doc = new HtmlAgilityPack.HtmlDocument();
                 doc.LoadHtml(htmlContent);
@@ -329,15 +418,164 @@ namespace TDSCoinMaker.TDS
                 if (reactionPickerNode != null)
                 {
                     reactionPickerUrl = reactionPickerNode.GetAttributeValue("href", string.Empty).TrimStart('/').Replace("amp;", "");
-                    //Console.WriteLine(reactionPickerUrl);
+                    Console.WriteLine("mbasic.facebook.com/" + reactionPickerUrl);
                 }
                 return reactionPickerUrl;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception: {ex.Message}");
+                Console.WriteLine($"Exception at getReactionLink: {ex.Message}");
             }
             return "";
+        }
+        public static async Task<string> getReactionLink(string cookie, string urlPost, WebProxy proxy)
+        {
+            try
+            {
+                var options = new RestClientOptions("https://mbasic.facebook.com")
+                {
+                    Proxy = proxy
+                };
+                var client = new RestClient(options);
+                string urlFB = await getFacebookIdPostByHttp(urlPost);
+                if (urlFB == null) return null;
+
+                var request = new RestRequest(urlFB);
+                headerAdder(request, cookie);
+                var response = await client.ExecuteAsync(request);
+               // File.WriteAllText("response1.html", response.Content);
+                string htmlContent = response.Content;
+                var doc = new HtmlAgilityPack.HtmlDocument();
+                doc.LoadHtml(htmlContent);
+                var reactionPickerNode = doc.DocumentNode.SelectSingleNode("//a[contains(@href, '/reactions/picker/?')]");
+                string reactionPickerUrl = string.Empty;
+                if (reactionPickerNode != null)
+                {
+                    reactionPickerUrl = reactionPickerNode.GetAttributeValue("href", string.Empty).TrimStart('/').Replace("amp;", "");
+                    Console.WriteLine("mbasic.facebook.com/" + reactionPickerUrl);
+                }
+                return reactionPickerUrl;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception at getReactionLink: {ex.Message}");
+            }
+            return "";
+        }
+        public static async Task<string> getFacebookIdPost(string urlPost)
+        {
+            /*       var proxyToDo = new WebProxy
+                   {
+                       Address = new Uri($"http://203.175.96.39:31423"), // Ensure the address includes a scheme
+                       Credentials = new NetworkCredential("hoangkv", "kvhoang") // Proxy credentials
+                   };*/
+            //Console.WriteLine((await checkProxyIp(Const.PROXY_TO_GET_URL) ? "GOOD CONNECT" : "BAD CONNECT"));
+            var options = new RestClientOptions("https://facebook.com")
+            {
+                Proxy = Const.PROXY_TO_GET_URL
+            };
+            var client = new RestClient(options);
+            var request = new RestRequest(urlPost);
+            headerAdder(request, "");
+            var response = await client.ExecuteAsync(request);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(response.Content);
+           // File.WriteAllText("response3.html", response.Content);
+
+            // Output the tokens
+
+            string urlReaction = ExtractToken(doc);
+            if (urlReaction == null) return null;
+            Console.WriteLine("mbasic.facebook.com/" + urlReaction);
+            return urlReaction;
+        }
+        public static async Task<string> getFacebookIdPostByHttp(string urlPost)
+        {
+
+            HttpClientHandler handler = new HttpClientHandler()
+            {
+                Proxy = Const.PROXY_TO_GET_URL,
+                UseProxy = true,
+            };
+            HttpClient client = new HttpClient(handler);
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"https://www.facebook.com/{urlPost}");
+
+            request.Headers.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+            request.Headers.Add("accept-language", "en-US,en;q=0.9");
+            request.Headers.Add("cookie", "ps_n=1; ps_l=1; datr=FpZ1ZiF2JK4fFoFQJlQV6uuS; wd=1912x1044");
+            request.Headers.Add("dpr", "1");
+            request.Headers.Add("priority", "u=0, i");
+            request.Headers.Add("sec-ch-prefers-color-scheme", "dark");
+            request.Headers.Add("sec-ch-ua", "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Microsoft Edge\";v=\"126\"");
+            request.Headers.Add("sec-ch-ua-full-version-list", "\"Not/A)Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"126.0.6478.62\", \"Microsoft Edge\";v=\"126.0.2592.61\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("sec-ch-ua-model", "\"\"");
+            request.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
+            request.Headers.Add("sec-ch-ua-platform-version", "\"15.0.0\"");
+            request.Headers.Add("sec-fetch-dest", "document");
+            request.Headers.Add("sec-fetch-mode", "navigate");
+            request.Headers.Add("sec-fetch-site", "none");
+            request.Headers.Add("sec-fetch-user", "?1");
+            request.Headers.Add("upgrade-insecure-requests", "1");
+            request.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0");
+            request.Headers.Add("viewport-width", "1912"); 
+
+            HttpResponseMessage response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            // Read the response content as a byte array
+            byte[] responseBytes = await response.Content.ReadAsByteArrayAsync();
+
+            // Convert the byte array to a string using a known encoding (e.g., UTF-8)
+            string responseBody = Encoding.UTF8.GetString(responseBytes);
+
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(responseBody);
+           // File.WriteAllText("response3.html", responseBody);
+
+            // Output the tokens
+
+            string urlReaction = ExtractToken(doc);
+            if (urlReaction == null) return null;
+            Console.WriteLine("mbasic.facebook.com/" + urlReaction); return urlReaction;
+        }
+        public static string ExtractToken(HtmlAgilityPack.HtmlDocument doc)
+        {
+
+            var scriptNode = doc.DocumentNode.SelectSingleNode("//script[contains(text(), '\"url\":\"')]");
+
+            if (scriptNode != null)
+            {
+                // Extract the text from the script node
+                string scriptText = scriptNode.InnerText;
+
+                // Use a regular expression to find the first URL
+                var match = Regex.Match(scriptText, "\"url\":\"(\\\\/[^\\\"]+)\"");
+                if (match.Success)
+                {
+                    // Extract and decode the URL
+                    string url = match.Groups[1].Value.Replace("\\/", "/");
+                    Console.WriteLine("Extracted URL content: " + url);
+                    if (url.Contains("videos"))
+                    {
+                        string[] parts = url.Split('/');
+
+
+                        string id = parts[parts.Length - 2];
+                        return $"/watch/?v={id}";
+                    }
+                    return url.TrimStart('/').Replace("amp;", "");
+                }
+                else
+                {
+                    Console.WriteLine("URL not found in the script text.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Script node containing the URL not found.");
+            }
+            return null;
         }
         public static bool checkBlock(string check)
         {
@@ -361,5 +599,107 @@ namespace TDSCoinMaker.TDS
                 return false;
             }
         }
+        public static void Test()
+        {
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.Load("response2.html");  // Replace with your file path
+
+            // Replace with your file path
+
+            // Find the script node or text node that contains the URL
+            var scriptNode = doc.DocumentNode.SelectSingleNode("//script[contains(text(), '\"url\":\"')]");
+
+            if (scriptNode != null)
+            {
+                // Extract the text from the script node
+                string scriptText = scriptNode.InnerText;
+
+                // Use a regular expression to find the first URL
+                var match = Regex.Match(scriptText, "\"url\":\"(\\\\/[^\\\"]+)\"");
+                if (match.Success)
+                {
+                    // Extract and decode the URL
+                    string url = match.Groups[1].Value.Replace("\\/", "/");
+                    Console.WriteLine("Extracted URL content: " + url);
+                }
+                else
+                {
+                    Console.WriteLine("URL not found in the script text.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Script node containing the URL not found.");
+            }
+        }
+        public static async Task<bool> TestProxy(WebProxy proxy)
+        {
+
+            return await Utilities.TestProxy(proxy);
+        }
+        public static async Task<bool> checkProxyIp(WebProxy proxy)
+        {
+            var options = new RestClientOptions("https://api64.ipify.org")
+            {
+                Proxy = proxy,
+                ThrowOnAnyError = true
+            };
+            var client = new RestClient(options);
+            var request = new RestRequest("?format=jsonp", Method.Get);
+
+            int retryCount = 0;
+            int maxRetries = 3; // Maximum number of retries
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    // Execute the request asynchronously and await the result
+                    var response = await client.ExecuteAsync(request);
+
+                    // Check if the proxy authentication failed
+                    if (response.StatusCode == System.Net.HttpStatusCode.ProxyAuthenticationRequired)
+                    {
+                        Console.WriteLine("Proxy authentication required.");
+                        return false;
+                    }
+                    else if (!response.IsSuccessful)
+                    {
+                        // Handle other unsuccessful status codes
+                        Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+                        return false;
+                    }
+                    else
+                    {
+                        Console.WriteLine(response.Content); // Print the response content
+                        return true; // Success
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    // Handle the specific case of an HttpRequestException
+                    Console.WriteLine($"HttpRequestException: {ex.Message}");
+                    return false; // Return false as per the requirement
+                }
+                catch (TaskCanceledException ex)
+                {
+                    // Handle the case of a timeout
+                    Console.WriteLine($"Timeout occurred: {ex.Message}");
+                    retryCount++; // Increment the retry count
+                    if (retryCount >= maxRetries)
+                    {
+                        Console.WriteLine("Max retries reached. Giving up.");
+                        return false; // Return false after exceeding max retries
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle other exceptions
+                    Console.WriteLine($"Exception: {ex.Message}");
+                    return false; // Return false for any other exceptions
+                }
+            }
+            return false;
+        }
+
     }
 }

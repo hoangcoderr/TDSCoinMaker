@@ -93,7 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FormEditting\Const.cs" />
-    <Compile Include="FormEditting\FeatureDisable.cs" />
+    <Compile Include="FormEditting\FormOption.cs" />
     <Compile Include="Logger\LogForm.cs">
       <SubType>Form</SubType>
     </Compile>

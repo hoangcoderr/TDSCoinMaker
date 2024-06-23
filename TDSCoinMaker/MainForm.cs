@@ -11,12 +11,15 @@ using System.Windows.Forms;
 using TDSCoinMaker.FormEditting;
 using TDSCoinMaker.TDS;
 using TDSCoinMaker.Logger;
+using System.Net;
+using System.Drawing;
 
 namespace TDSCoinMaker
 {
     public partial class MainForm : Form
     {
-        public LogForm logForm;
+
+        public LogForm logForm = new LogForm("Hi");
 
         public int getStartHold()
         {
@@ -68,10 +71,16 @@ namespace TDSCoinMaker
         }
         public MainForm()
         {
-            FeatureDisable.DisableMaximizeBox(this);
+            FormOption.DisableMaximizeBox(this);
+            FormOption.SetTitleBarColor(this.Handle, System.Drawing.Color.Red);
             InitializeComponent();
+            this.FormClosing += MainForm_FormClosing;
         }
         public static List<User> users = new List<User>();
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Application.Exit();
+        }
         private void MainForm_Load(object sender, EventArgs e)
         {
             Utilities.setTableSettings(infoTable);
@@ -105,6 +114,7 @@ namespace TDSCoinMaker
                     txtTDSToken.Text = string.Empty;
                     txtProxy.Text = string.Empty;
                 }
+                infoTable.Rows[infoTable.RowCount - 1].Cells[Const.ACTION_INDEX].Value = "Start";
             }
             else
             {
@@ -127,6 +137,14 @@ namespace TDSCoinMaker
             {
                 File.WriteAllText("config\\account.ini", string.Empty);
             }
+            for (int i = 0; i < infoTable.RowCount; i++)
+            {
+                User user = MainForm.users.Find(x => x.getId() == Convert.ToInt32(infoTable.Rows[i].Cells[0].Value));
+                if (user.task == null)
+                    infoTable.Rows[i].Cells[Const.ACTION_INDEX].Value = "Start";
+                else
+                    infoTable.Rows[i].Cells[Const.ACTION_INDEX].Value = "Stop";
+            }
         }
         private void infoTable_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -134,12 +152,35 @@ namespace TDSCoinMaker
             if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn)
             {
                 if (e.ColumnIndex.Equals(Const.ACTION_INDEX))
-                    user.StartJob();
-                else
-                    if (user.logForm is null)
-                    MessageBox.Show("This process have not opened");
+                {
+                    if (user.task != null)
+                    {
+                        infoTable.Rows[e.RowIndex].DefaultCellStyle.BackColor = System.Drawing.Color.White;
+                        infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.START;
+                    }
                     else
-                    logForm.Show();
+                    {
+                        infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.STOP;
+                        infoTable.Rows[e.RowIndex].DefaultCellStyle.BackColor = System.Drawing.Color.LightGreen;
+                    }
+
+
+                    user.logForm.Show();
+                    //user.logForm.Log("Dai ca hoang", Color.ForestGreen);
+                    user.StartJob();
+                }
+                else
+                    if (user.logForm == null)
+                {
+                    MessageBox.Show("This process have not opened");
+                }
+                else
+                {
+
+                    user.logForm.Show();
+                }
+
+
             }
             else
             {
@@ -152,10 +193,11 @@ namespace TDSCoinMaker
 
         private async void btnTest_Click(object sender, EventArgs e)
         {
-            /*  logForm = new LogForm("ID: " + this.id + " LOGGER");
-              logForm.Show();
-              logForm.AddLog("Test");
-  */
+            //Logger.Instance.ShowLogForm();
+            //logForm.Show();
+            MessageBox.Show(await Utilities.TestProxy(Const.PROXY_TO_GET_URL) ? "Yes" : "No");
+
+            //await FBUtilities.getFacebookIdPost("457314160581340");
             /*List<string> list1 = new List<string>();
             List<string> list2 = new List<string>();
             (list1, list2) = TDSUtilities.getTDSJob("TDSQfiETMyVmdlNnI6IiclZXZzJCLiInclR2bjdmbh9GaiojIyV2c1Jye", "reactcmt");
@@ -170,9 +212,19 @@ namespace TDSCoinMaker
 
             // Đóng driver khi hoàn thành
             //driver.Quit();
-            string cookie = "sb=B1QZZiHMdna-MeP9zWURAVIH;datr=B1QZZlb--U-cfPQ6RbKChXJR;ps_n=1;ps_l=1;c_user=100027816315772;xs=33%3AJNhuRGyhBpha_w%3A2%3A1718699689%3A-1%3A6172%3A%3AAcWC-R2Ee7PEeN24oerzSFy1HxNidcS4QDe-rYQD7Q;fr=1YnUNhmBpIZvqo7Um.AWU6jamcipqoDp-UYwBuBmmPnfI.BmcUbm..AAA.0.0.BmcUbm.AWVZsiYX55k;wd=1920x945;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1718699753029%2C%22v%22%3A1%7D;m_page_voice=100027816315772;";
             // await FBUtilities.ReactionPost(cookie, "1297405301196668", "sad", "");
-            //await FBUtilities.Test();
+            string cookie = "sb=B1QZZiHMdna-MeP9zWURAVIH;datr=B1QZZlb--U-cfPQ6RbKChXJR;ps_n=1;ps_l=1;wd=1872x1078;c_user=100027816315772;m_page_voice=100027816315772;xs=11%3A8wzghiMItlDemQ%3A2%3A1718718895%3A-1%3A6172%3A%3AAcVoZiqNBoAqmEvZ41JNacqso4ZQC8JxMzYshH2B6g;fr=1kRw3m4DmVijKk4mu.AWU5xDeEvVlKULHDLgXoE2fBGj0.Bmcvpu..AAA.0.0.Bmcvpu.AWX5MR-huaw;presence=C%7B%22t3%22%3A%5B%5D%2C%22utc3%22%3A1718811249052%2C%22v%22%3A1%7D;";
+            //await FBUtilities.Test(cookie, "100002910703301_7615500045223610");
+            //await FBUtilities.getFacebookIdPost("100034874357399_1103941204111681");
+            //FBUtilities.Test();
+            /*var proxyVia = new WebProxy
+            {
+                Address = new Uri($"http://103.79.143.201:49195"), // Ensure the address includes a scheme
+                Credentials = new NetworkCredential("user49195", "OHFOjtHYUL") // Proxy credentials
+            };
+            Console.WriteLine((await Utilities.TestProxy(proxyVia) ? "GOOD CONNECT" : "BAD CONNECT"));*/
+
+            //await FBUtilities.getFacebookIdPost("100002423876778_7654449104645809");
         }
 
         private void nbrStartHold_ValueChanged(object sender, EventArgs e)
@@ -202,7 +254,7 @@ namespace TDSCoinMaker
 
         private void btnTest1_Click(object sender, EventArgs e)
         {
-            logForm.AddLog("Random number + " + (new Random().Next()));
+           
         }
 
         private void btnEdit_Click(object sender, EventArgs e)
@@ -214,7 +266,44 @@ namespace TDSCoinMaker
                 infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value = txtFbToken.Text;
                 infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value = txtTDSToken.Text;
                 infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value = txtProxy.Text;
+                Utilities.UpdateUser(int.Parse(infoTable.Rows[thisRowIndex].Cells[0].Value.ToString()), this.infoTable);
                 Utilities.SaveAccToFile(Const.ACCOUNT_PATH, infoTable);
+            }
+        }
+
+        private void infoTable_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Kiểm tra xem cột được nhấn có phải là cột nút không
+            if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn && e.RowIndex >= 0)
+            {
+                // Thay đổi văn bản của nút
+
+            }
+        }
+
+        private void infoTable_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            User user = users[e.RowIndex];
+            if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn)
+            {
+                if (e.ColumnIndex.Equals(Const.ACTION_INDEX))
+                {
+                   
+                    
+                }
+                else
+                {
+                    if (user.logForm.Visible)
+                    {
+                        infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.CLOSE; // Đặt lại văn bản nếu form log đang hiển thị
+                      
+                    }
+                    else
+                    {
+                        infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.OPEN; // Thay đổi văn bản nếu form log đang ẩn
+                
+                    }
+                }
             }
         }
     }
