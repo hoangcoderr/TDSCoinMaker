@@ -14,6 +14,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using TDSCoinMaker.FormEditting;
+using Guna.UI.WinForms;
 
 namespace TDSCoinMaker
 {
@@ -54,33 +55,40 @@ namespace TDSCoinMaker
                 foreach (var item in list)
                 {
                     sb.Append(item);
-                    sb.Append(", ");
+                    sb.Append(",");
                 }
             return sb.ToString().TrimEnd(',', ' ');
         }
-        public static void addDataToTable(DataGridView table, User user)
+        public static List<string> getUID(List<string> list)
         {
-            table.Rows.Add(user.getId(), user.getFbToken(), user.getTdsToken(), user.getJobType(), Utilities.ToStringCustom(user.getJobId()).ToString(), user.getProxy(), user.getStatus());
-            // Thêm cột nút "Edit"
-            
+            List<string> result = new List<string>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                result.Add(FBUtilities.cookiesGetter(list[i])[0]);
+            }
+            return result;
+        }
+        public static void addDataToTable(GunaDataGridView table, User user)
+        {
+            table.Rows.Add(user.getId(), Utilities.ToStringCustom(getUID(user.getFbToken())), user.getTdsToken(), user.getJobType(), Utilities.ToStringCustom(user.getJobId()).ToString(), Utilities.ToStringCustom(user.getProxy()), user.getStatus());
             SaveAccToFile("config\\account.ini", table);
         }
-        public static bool isAvaiableToken(DataGridView dgv, string checkToken, int index)
+        public static int indexAvaiableToken(GunaDataGridView dgv, string checkToken, int index)
         {
             foreach (DataGridViewRow row in dgv.Rows)
             {
                 if (row.Cells[index].Value != null && row.Cells[index].Value.ToString().Equals(checkToken))
                 {
-                    return true;
+                    return row.Index;
                 }
             }
-            return false;
+            return -1;
         }
         public static int getJobDone()
         {
             return Program.mainForm.getJobDone();
         }
-        public static void LoadAccFromFile(string path, DataGridView dgv)
+        public static void LoadAccFromFile(string path, GunaDataGridView dgv)
         {
             if (File.Exists(path))
             {
@@ -88,16 +96,17 @@ namespace TDSCoinMaker
                 foreach (var line in lines)
                 {
                     string[] data = line.Split('|');
-                    User user = new User(int.Parse(data[0]), data[1], data[2], data[3], new List<string>(), data[5], string.Empty);
-                    addDataToTable(dgv, user);
+                    User user = new User(int.Parse(data[0]), new List<string>(data[1].Split(',')), data[2], data[3], new List<string>(), new List<string>(data[5].Split(',')), string.Empty);
                     MainForm.users.Add(user);
+                    addDataToTable(dgv, user);
+
                 }
                 for (int i = 0; i < dgv.RowCount; i++)
                 {
                     dgv.Rows[i].Cells[Const.ACTION_INDEX].Value = "Start";
                 }
             }
-            
+
             else
             {
                 MessageBox.Show("Account file not found, create new one!");
@@ -105,16 +114,16 @@ namespace TDSCoinMaker
                 File.Create(path).Close();
             }
         }
-        public static void UpdateUser(int id, DataGridView dgv)
+        public static void UpdateUser(int id, GunaDataGridView dgv)
         {
             User user = MainForm.users.Find(x => x.getId() == id);
             foreach (DataGridViewRow row in dgv.Rows)
             {
                 if (row.Cells[0].Value != null && row.Cells[0].Value.ToString().Equals(id.ToString()))
                 {
-                    user.setFbToken(row.Cells[1].Value.ToString());
+                    user.setFbToken(new List<string>(row.Cells[1].Value.ToString().Split(',')));
                     user.setTdsToken(row.Cells[2].Value.ToString());
-                    user.setProxy(row.Cells[5].Value.ToString());
+                    user.setProxy(new List<string>(row.Cells[5].Value.ToString().Split(',')));
                     break;
                 }
             }
@@ -129,13 +138,15 @@ namespace TDSCoinMaker
                 mainform.setJobDone(int.Parse(arr[2]));
                 mainform.setStartWaitingJob(int.Parse(arr[3]));
                 mainform.setStopWaitingJob(int.Parse(arr[4]));
+                mainform.setJobToChangeAcc(int.Parse(arr[5]));
+                mainform.setJobToStop(int.Parse(arr[6]));
             }
             else
             {
                 MessageBox.Show("Config file not found, create new one!");
                 //create new file if not found
                 File.Create(path).Close();
-                File.WriteAllText(path, "0|0|0|0|0|");
+                File.WriteAllText(path, "0|0|0|0|0|0|0");
             }
 
         }
@@ -143,7 +154,7 @@ namespace TDSCoinMaker
         {
             using (StreamWriter sw = new StreamWriter(path))
             {
-                sw.Write(mainform.getStartHold().ToString() + "|" + mainform.getStopHold() + "|" + mainform.getJobDone() + "|" + mainform.getStartWaitingJob() + "|" + mainform.getStopWaitingJob());
+                sw.Write(mainform.getStartHold().ToString() + "|" + mainform.getStopHold() + "|" + mainform.getJobDone() + "|" + mainform.getStartWaitingJob() + "|" + mainform.getStopWaitingJob() + "|" + mainform.getJobToChangeAcc() + "|" + mainform.getJobToStop());
                 sw.Close();
             }
         }
@@ -156,12 +167,20 @@ namespace TDSCoinMaker
             //return random time from Program.mainForm.getStartHold() to Program.mainForm.getStopHold()
             return new Random().Next(Program.mainForm.getStartHold(), Program.mainForm.getStopHold());
         }
+        public static int getJobToChangeAcc()
+        {
+            return Program.mainForm.getJobToChangeAcc();
+        }
+        public static int getJobToStop()
+        {
+            return Program.mainForm.getJobToStop();
+        }
         public static int getTimeToWait()
         {
             //return random time from Program.mainForm.getStartWaitingJob() to Program.mainForm.getStopWaitingJob()
             return new Random().Next(Program.mainForm.getStartWaitingJob(), Program.mainForm.getStopWaitingJob());
         }
-        public static void SaveAccToFile(string path, DataGridView dgv)
+        public static void SaveAccToFile(string path, GunaDataGridView dgv)
         {
             // Name of the mutex should be unique to avoid conflicts with other applications
             string mutexName = "Global\\TDSCoinMakerSaveAccToFileMutex";
@@ -174,12 +193,9 @@ namespace TDSCoinMaker
                     {
                         using (StreamWriter sw = new StreamWriter(path))
                         {
-                            foreach (DataGridViewRow row in dgv.Rows)
+                            foreach (User user in MainForm.users)
                             {
-                                if (row.Cells[0].Value != null)
-                                {
-                                    sw.WriteLine(row.Cells[0].Value.ToString() + "|" + row.Cells[1].Value.ToString() + "|" + row.Cells[2].Value.ToString() + "|" + row.Cells[3].Value.ToString() + "|" + row.Cells[4].Value.ToString() + "|" + row.Cells[5].Value.ToString() + "|" + row.Cells[6].Value.ToString());
-                                }
+                                sw.WriteLine(user.getId() + "|" + Utilities.ToStringCustom(user.getFbToken()) + "|" + user.getTdsToken() + "|" + user.getJobType() + "|" + Utilities.ToStringCustom(user.getJobId()) + "|" + Utilities.ToStringCustom(user.getProxy()) + "|" + user.getStatus());
                             }
                         }
                     }
@@ -200,7 +216,15 @@ namespace TDSCoinMaker
             }
         }
 
-        public static void UpdateTable(DataGridView dgv, List<User> users)
+        public static void resetUserId(List<User> users)
+        {
+            for (int i = 0; i < users.Count; i++)
+            {
+                users[i].setId(i);
+            }
+        }
+
+        public static void UpdateTable(GunaDataGridView dgv, List<User> users)
         {
             dgv.Rows.Clear();
             foreach (User user in users)
@@ -210,7 +234,7 @@ namespace TDSCoinMaker
         }
 
 
-        public static void setTableSettings(DataGridView table)
+        public static void setTableSettings(GunaDataGridView table)
         {
             foreach (DataGridViewColumn column in table.Columns)
             {
@@ -220,7 +244,7 @@ namespace TDSCoinMaker
             table.AllowUserToResizeRows = false;
         }
 
-        public static void updateRow(DataGridView dgv, User user, int index)
+        public static void updateRow(GunaDataGridView dgv, User user, int index)
         {
             dgv.Rows[index].Cells[1].Value = user.getFbToken();
             dgv.Rows[index].Cells[2].Value = user.getTdsToken();
@@ -232,28 +256,13 @@ namespace TDSCoinMaker
             Program.mainForm.setInfoTable(dgv);
         }
 
-        public static void updateColumn(DataGridView dgv, int indexRow, int indexColumn, string value)
+        public static void updateColumn(GunaDataGridView dgv, int indexRow, int indexColumn, string value)
         {
             dgv.Rows[indexRow].Cells[indexColumn].Value = value;
             if (indexColumn != 6)
             {
-                SaveAccToFile("config\\account.ini", dgv);
                 Program.mainForm.setInfoTable(dgv);
             }
-        }
-        public static IWebDriver SetupWebDriverWithProxy(string proxyHost, string proxyPort, string proxyUser, string proxyPass)
-        {
-            // Cấu hình tùy chọn Chrome để sử dụng proxy
-            var options = new ChromeOptions();
-
-            // Add your HTTP-Proxy
-            options.AddHttpProxy(proxyHost, int.Parse(proxyPort), proxyUser, proxyPass);
-            // Tạo trình điều khiển
-            IWebDriver driver = new ChromeDriver(options);
-
-            // Gọi hàm xác thực proxy
-
-            return driver;
         }
         public static string[] analyzeProxy(string proxy)
         {

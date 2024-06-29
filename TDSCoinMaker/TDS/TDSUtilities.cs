@@ -125,7 +125,7 @@ namespace TDSCoinMaker.TDS
             {
                 var responseContent = response.Content;
                 string responseString = response.Content.ReadAsStringAsync().Result;
-                //Console.WriteLine(responseString);
+                Console.WriteLine(responseString);
 
                 var jsonObject = Newtonsoft.Json.Linq.JObject.Parse(responseString);
                 if (jsonObject.ContainsKey("error"))
@@ -144,13 +144,44 @@ namespace TDSCoinMaker.TDS
         public static void setAccToDoJob(string token, string idAcc)
         {
             HttpClient client = new HttpClient();
-            var response = client.GetAsync($"https://traodoisub.com/api/?fields=run&id={idAcc}&access_token={token}").Result;
-            if (response.IsSuccessStatusCode)
+            bool isSuccess = false;
+            int retryCount = 0;
+            const int maxRetry = 5; // Giới hạn số lần thử lại
+
+            while (!isSuccess && retryCount < maxRetry)
             {
-                var responseContent = response.Content;
-                string responseString = response.Content.ReadAsStringAsync().Result;
-                Console.WriteLine(responseString);
+                var response = client.GetAsync($"https://traodoisub.com/api/?fields=run&id={idAcc}&access_token={token}").Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = response.Content;
+                    string responseString = response.Content.ReadAsStringAsync().Result;
+                    Console.WriteLine(responseString);
+
+                    if (!responseString.Contains("error"))
+                    {
+                        isSuccess = true; // Thoát khỏi vòng lặp nếu không có lỗi
+                    }
+                    else
+                    {
+                        Console.WriteLine("Detected error in response, retrying...");
+                        retryCount++;
+                        Thread.Sleep(1000); // Đợi 1 giây trước khi thử lại
+                    }
+                }
+                else
+                {
+                    // Xử lý trường hợp phản hồi không thành công
+                    Console.WriteLine("Failed to get a successful response from the server.");
+                    break;
+                }
+            }
+
+            if (!isSuccess)
+            {
+                Console.WriteLine("Failed to set account to do job after retries.");
             }
         }
+
+
     }
 }

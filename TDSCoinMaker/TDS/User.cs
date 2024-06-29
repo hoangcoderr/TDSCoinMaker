@@ -22,7 +22,7 @@ namespace TDSCoinMaker.TDS
         private bool isStart = false;
         private int id = -1;
         private string tdsToken = string.Empty;
-        public string fbToken = string.Empty;
+        private List<string> fbToken = new List<string>();
         public WebProxy webProxy = null;
         private string job_type = "likevip";
 
@@ -30,7 +30,7 @@ namespace TDSCoinMaker.TDS
 
         private List<string> job_id = new List<string>();
 
-        private string proxy = string.Empty;
+        private List<string> proxy = new List<string>();
 
         private string status = string.Empty;
 
@@ -42,6 +42,8 @@ namespace TDSCoinMaker.TDS
 
         public int jobCompleted = 0;
 
+        public int jobToChangeAcc = 0;
+
         public int jobDid = 0;
 
         public int tdsXu = 0;
@@ -51,7 +53,7 @@ namespace TDSCoinMaker.TDS
         public LogForm logForm;
 
         private CancellationTokenSource cts = new CancellationTokenSource();
-        public User(int id, string fbToken, string tdsToken, string job_type, List<string> job_id, string proxy, string status)
+        public User(int id, List<string> fbToken, string tdsToken, string job_type, List<string> job_id, List<string> proxy, string status)
         {
             this.id = id;
             this.tdsToken = tdsToken;
@@ -62,11 +64,9 @@ namespace TDSCoinMaker.TDS
             this.proxy = proxy;
             logForm = new LogForm("ID: " + this.id);
         }
-        public User(string tdsToken, string proxy, string fbToken)
+        public User(string tdsToken)
         {
-            this.proxy = proxy;
             this.tdsToken = tdsToken;
-            this.fbToken = fbToken;
             logForm = new LogForm("ID: " + this.id);
         }
         public int getId()
@@ -113,6 +113,7 @@ namespace TDSCoinMaker.TDS
                 cts = new CancellationTokenSource();
                 isTaskRunning = false; // Cập nhật cờ trước khi khởi chạy Task mới
                 task = null;// Đặt lại cờ
+                UpdateListAcc();
                 return; // Thoát sớm nếu Task đang chạy
             }
 
@@ -143,7 +144,7 @@ namespace TDSCoinMaker.TDS
         public void setFbId()
         {
 
-            string[] temp = FBUtilities.cookiesGetter(fbToken);
+            string[] temp = FBUtilities.cookiesGetter(fbToken[currentFbTokenIndex]);
             fbId = temp[0];
 
         }
@@ -155,7 +156,7 @@ namespace TDSCoinMaker.TDS
         {
             return tdsToken;
         }
-        public string getFbToken()
+        public List<string>getFbToken()
         {
             return fbToken;
         }
@@ -196,6 +197,14 @@ namespace TDSCoinMaker.TDS
             this.status = stringUpdating;
             Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 6, status);
         }
+        public void UpdateCurrentAcc()
+        {
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 1, FBUtilities.cookiesGetter(fbToken[currentFbTokenIndex])[0]);
+        }
+        public void UpdateListAcc()
+        {
+            Utilities.updateColumn(Program.mainForm.getInfoTable(), this.id, 1, Utilities.ToStringCustom(Utilities.getUID(this.fbToken)));
+        }
         public void UpdateListJob(string job_type)
         {
             this.job_type = job_type;
@@ -218,49 +227,95 @@ namespace TDSCoinMaker.TDS
             return Utilities.getTimeToWait();
         }
         private static Mutex mutex = new Mutex();
+        
+        private bool isEndOfList()
+        {
+            return currentFbTokenIndex == fbToken.Count;
+        }
+        private void changeAccFb()
+        {
+            currentFbTokenIndex++;
+            if (isEndOfList())
+            {
+                currentFbTokenIndex = 0;
+            }
+            UpdateStatus("CHANGE ACC TO " + currentFbTokenIndex);
+            UpdateCurrentAcc();
+            fbId = FBUtilities.cookiesGetter(fbToken[currentFbTokenIndex])[0];
+            configAccToDoJob();
+            jobToChangeAcc = 0;
+        }
         public async Task doJob(CancellationToken cancellationToken)
         {
             jobDid = 0;
+            jobToChangeAcc = 0;
+            jobCompleted = 0;
             UpdateStatus("GETTING INFO OF TDS ACC AND COOKIE ...");
-         
+
+            int checkAccDie = 0;
             while (true)
             {
-                
-                this.tdsXu = TDSUtilities.getTDSInfo(tdsToken, logForm);
-                updateTdsXu(0);
-                if (proxy != string.Empty)
+                if (proxy[currentFbTokenIndex] != string.Empty)
                 {
-                    string[] proxyAtr = Utilities.analyzeProxy(proxy);
+                    string[] proxyAtr = Utilities.analyzeProxy(proxy[currentFbTokenIndex]);
                     webProxy = new WebProxy
                     {
                         Address = new Uri($"http://{proxyAtr[0]}:{proxyAtr[1]}"), // Ensure the address includes a scheme
                         Credentials = new NetworkCredential(proxyAtr[2], proxyAtr[3]) // Proxy credentials
                     };
-                    if (await FBUtilities.isCookieAlive(fbToken, webProxy))
+                    if (await FBUtilities.isCookieAlive(fbToken[currentFbTokenIndex], webProxy))
                     {
-                        UpdateStatus("COOKIE ALIVE");
+                        UpdateStatus("COOKIE ALIVE AT PROXY" + webProxy.Address.Host);
+                        fbId = FBUtilities.cookiesGetter(fbToken[currentFbTokenIndex])[0];
+                        configAccToDoJob();
+                        UpdateCurrentAcc();
+                        checkAccDie = 0;
                     }
                     else
                     {
-                        UpdateStatus("COOKIE DEAD");
-                        cts.Cancel(); // Hủy bỏ CancellationTokenSource
-                        return;
+                        UpdateStatus("COOKIE DEAD AT PROXY" + webProxy.Address.Host);
+                        currentFbTokenIndex++;
+                        checkAccDie++;
+                        if (isEndOfList())
+                        {
+                            currentFbTokenIndex = 0;
+                        }
+                        if (checkAccDie == fbToken.Count)
+                        {
+                            UpdateStatus("NO MORE COOKIE");
+                            cts.Cancel();
+                            return;
+                        }
+                        continue;
                     }
                 }
                 else
                 {
-                    if (await FBUtilities.isCookieAlive(fbToken))
+                    if (await FBUtilities.isCookieAlive(fbToken[currentFbTokenIndex]))
                     {
                         UpdateStatus("COOKIE ALIVE NO PROXY");
+                        fbId = FBUtilities.cookiesGetter(fbToken[currentFbTokenIndex])[0];
+                        configAccToDoJob();
+                        UpdateCurrentAcc();
                     }
                     else
                     {
                         UpdateStatus("COOKIE DEAD NO PROXY");
-                        cts.Cancel(); // Hủy bỏ CancellationTokenSource
-                        return;
+                        currentFbTokenIndex++;
+                        if (isEndOfList())
+                        {
+                            UpdateStatus("NO MORE COOKIE");
+                            cts.Cancel();
+                            return;
+                        }
+                        continue;
                     }
                 }
-                await Task.Delay(3000);
+                await Task.Delay(2000);
+                this.tdsXu = TDSUtilities.getTDSInfo(tdsToken, logForm);
+                updateTdsXu(0);
+                await Task.Delay(2000);
+
                 for (int j = 0; j < Const.LIST_TYPE_JOB.Length; j++)
                 {
                     if (!isTaskRunning)
@@ -287,14 +342,19 @@ namespace TDSCoinMaker.TDS
                         }
                         UpdateStatus(Const.DOING_JOB + type_of_job[i].ToUpper() + " " + job_id[i]);
                         //OpenBrowser(Const.FACEBOOK_URL, 400, 600, fbToken, job_id[i], type_of_job[i].ToLower(), proxy);
-                        string output = await ReactionPost(fbToken, job_id[i], type_of_job[i].ToLower(), webProxy);
+                        string output = await ReactionPost(fbToken[currentFbTokenIndex], job_id[i], type_of_job[i].ToLower(), webProxy);
                         Console.WriteLine("Output: " + output);
                         if (output.Equals("proxy error"))
                         {
-
                             UpdateStatus("PROXY ERROR, STOPPED!");
                             cts.Cancel(); // Hủy bỏ CancellationTokenSource
                             return;
+                        }
+                        if (output.Equals("die acc"))
+                        {
+                            UpdateStatus("ACC DIE, CHANGE ACC!");
+                            changeAccFb();
+                            break;
                         }
                         await Task.Delay(500);
                         if (TDSUtilities.claimTDSXu(tdsToken, type_of_job[i].ToUpper(), job_id[i]))
@@ -333,6 +393,7 @@ namespace TDSCoinMaker.TDS
                         if (!output.Equals("invalid"))
                         {
                             jobCompleted++;
+                            jobToChangeAcc++;
                             int waitForNextJob = this.getTimeToWait();
                             while (waitForNextJob > 0)
                             {
@@ -346,7 +407,6 @@ namespace TDSCoinMaker.TDS
                                 waitForNextJob--;
                             }
                         }
-
 
                         if (jobCompleted == Utilities.getJobDone())
                         {
@@ -365,6 +425,18 @@ namespace TDSCoinMaker.TDS
                             resetJobDone();
                             break;
                         }
+                        if (jobToChangeAcc == Utilities.getJobToChangeAcc())
+                        {
+                            changeAccFb();
+                            await Task.Delay(2000);
+                            break;
+                        }
+                        if (jobDid == Utilities.getJobToStop())
+                        {
+                            UpdateStatus(Const.DID_ENOUGH_JOB);
+                            cts.Cancel();
+                            return;
+                        }
                     }
                     job_id = new List<string>();
                     type_of_job = new List<string>();
@@ -379,7 +451,7 @@ namespace TDSCoinMaker.TDS
         {
             this.tdsToken = tdsToken;
         }
-        public void setFbToken(string fbToken)
+        public void setFbToken(List<string> fbToken)
         {
             this.fbToken = fbToken;
         }
@@ -395,11 +467,11 @@ namespace TDSCoinMaker.TDS
         {
             this.status = status;
         }
-        public void setProxy(string proxy)
+        public void setProxy(List<string> proxy)
         {
             this.proxy = proxy;
         }
-        public string getProxy()
+        public List<string> getProxy()
         {
             return proxy;
         }

@@ -29,24 +29,32 @@ namespace TDSCoinMaker.TDS
     {
         public static string[] cookiesGetter(string token)
         {
-            string[] cookies = token.Split(';');
-            string[] atr = new string[2];
-            foreach (string cookie in cookies)
+            try
             {
-                if (cookie != null)
+                string[] cookies = token.Split(';');
+                string[] atr = new string[2];
+                foreach (string cookie in cookies)
                 {
-                    if (cookie.Contains("c_user"))
+                    if (cookie != null)
                     {
-                        atr[0] = cookie.Split('=')[1];
-                    }
-                    else if (cookie.Contains("xs"))
-                    {
-                        atr[1] = cookie.Split('=')[1];
-                        break;
+                        if (cookie.Contains("c_user"))
+                        {
+                            atr[0] = cookie.Split('=')[1];
+                        }
+                        else if (cookie.Contains("xs"))
+                        {
+                            atr[1] = cookie.Split('=')[1];
+                            break;
+                        }
                     }
                 }
+                return atr;
             }
-            return atr;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception at cookiesGetter: {ex.Message}");
+                return new string[2];
+            }
         }
         public static void ReactionPost(IWebDriver webDriver, string urlPost, string typeReaction)
         {
@@ -302,10 +310,11 @@ namespace TDSCoinMaker.TDS
 
                     headerAdder(requestToResponse, cookie);
                     var responseAfterReaction = await clientToResponse.ExecuteAsync(requestToResponse);
-                    //File.WriteAllText("response.html", responseAfterReaction.Content);
+                    File.WriteAllText("response.html", responseAfterReaction.Content);
                     if (checkBlock(responseAfterReaction.Content))
                     {
                         Console.WriteLine("Acc died");
+                        return "die acc";
                     }
                     else
                     {
@@ -497,18 +506,18 @@ namespace TDSCoinMaker.TDS
                 Proxy = Const.PROXY_TO_GET_URL,
                 UseProxy = true,
             };
-            HttpClient client = new HttpClient(handler);
+            HttpClient client = new HttpClient();
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"https://www.facebook.com/{urlPost}");
 
             request.Headers.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
             request.Headers.Add("accept-language", "en-US,en;q=0.9");
-            request.Headers.Add("cookie", "ps_n=1; ps_l=1; datr=FpZ1ZiF2JK4fFoFQJlQV6uuS; wd=1912x1044");
+            request.Headers.Add("cookie", "sb=jHh-ZnTqxXmMqQk2mnZ232J9; fr=036JmfutsgDgDzQ0d..BmfniM..AAA.0.0.BmfniM.AWVUD-XvNQg; datr=jHh-ZlFAze6jfwy1YnSkCWK0; ps_n=1; ps_l=1; wd=1920x1080");
             request.Headers.Add("dpr", "1");
             request.Headers.Add("priority", "u=0, i");
             request.Headers.Add("sec-ch-prefers-color-scheme", "dark");
             request.Headers.Add("sec-ch-ua", "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Microsoft Edge\";v=\"126\"");
-            request.Headers.Add("sec-ch-ua-full-version-list", "\"Not/A)Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"126.0.6478.62\", \"Microsoft Edge\";v=\"126.0.2592.61\"");
+            request.Headers.Add("sec-ch-ua-full-version-list", "\"Not/A)Brand\";v=\"8.0.0.0\", \"Chromium\";v=\"126.0.6478.114\", \"Microsoft Edge\";v=\"126.0.2592.68\"");
             request.Headers.Add("sec-ch-ua-mobile", "?0");
             request.Headers.Add("sec-ch-ua-model", "\"\"");
             request.Headers.Add("sec-ch-ua-platform", "\"Windows\"");
@@ -519,24 +528,33 @@ namespace TDSCoinMaker.TDS
             request.Headers.Add("sec-fetch-user", "?1");
             request.Headers.Add("upgrade-insecure-requests", "1");
             request.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0");
-            request.Headers.Add("viewport-width", "1912"); 
+            request.Headers.Add("viewport-width", "1920");
 
-            HttpResponseMessage response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            // Read the response content as a byte array
-            byte[] responseBytes = await response.Content.ReadAsByteArrayAsync();
+         string urlReaction = null;
+do
+{
+    HttpResponseMessage response = await client.SendAsync(request);
+    response.EnsureSuccessStatusCode();
+    // Read the response content as a byte array
+    byte[] responseBytes = await response.Content.ReadAsByteArrayAsync();
 
-            // Convert the byte array to a string using a known encoding (e.g., UTF-8)
-            string responseBody = Encoding.UTF8.GetString(responseBytes);
+    // Convert the byte array to a string using a known encoding (e.g., UTF-8)
+    string responseBody = Encoding.UTF8.GetString(responseBytes);
 
-            var doc = new HtmlAgilityPack.HtmlDocument();
-            doc.LoadHtml(responseBody);
-           // File.WriteAllText("response3.html", responseBody);
+    var doc = new HtmlAgilityPack.HtmlDocument();
+    doc.LoadHtml(responseBody);
+    File.WriteAllText("response3.html", responseBody);
 
-            // Output the tokens
+    // Output the tokens
+    urlReaction = ExtractToken(doc);
 
-            string urlReaction = ExtractToken(doc);
-            if (urlReaction == null) return null;
+    if (urlReaction != null) break; // Nếu urlReaction không phải là null, thoát khỏi vòng lặp
+
+    // Tùy chọn: Thêm một khoảng thời gian chờ trước khi thực hiện request lại để tránh làm quá tải server
+    await Task.Delay(1000); // Chờ 1 giây trước khi thử lại
+} while (urlReaction == null); // Tiếp tục lặp nếu urlReaction vẫn là null
+
+if (urlReaction == null) return null; 
             Console.WriteLine("mbasic.facebook.com/" + urlReaction); return urlReaction;
         }
         public static string ExtractToken(HtmlAgilityPack.HtmlDocument doc)
@@ -559,10 +577,8 @@ namespace TDSCoinMaker.TDS
                     if (url.Contains("videos"))
                     {
                         string[] parts = url.Split('/');
-
-
                         string id = parts[parts.Length - 2];
-                        return $"/watch/?v={id}";
+                        return $"watch/?v={id}";
                     }
                     return url.TrimStart('/').Replace("amp;", "");
                 }
@@ -579,25 +595,11 @@ namespace TDSCoinMaker.TDS
         }
         public static bool checkBlock(string check)
         {
-            try
+            if (check.Contains("khoản của bạn hiện bị hạn chế") || check.Contains("account is restricted right now"))
             {
-                if (check.Contains("<div class=\"bn bo bp j bq\"><span class=\"br\"><div>"))
-                {
-                    string splitCheck = check.Split(new string[] { "<div class=\"bn bo bp j bq\"><span class=\"br\"><div>" }, StringSplitOptions.None)[1]
-                                            .Split(new string[] { "<br /><br />" }, StringSplitOptions.None)[0];
-                    Console.WriteLine(splitCheck);
-                    return splitCheck.Contains("specific content");
-                }
-                else
-                {
-                    return false;
-                }
+                return true;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception: {ex.Message}");
-                return false;
-            }
+            return false;
         }
         public static void Test()
         {

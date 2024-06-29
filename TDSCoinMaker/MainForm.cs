@@ -13,6 +13,8 @@ using TDSCoinMaker.TDS;
 using TDSCoinMaker.Logger;
 using System.Net;
 using System.Drawing;
+using Guna.UI.WinForms;
+using Guna.UI2.WinForms;
 
 namespace TDSCoinMaker
 {
@@ -61,21 +63,45 @@ namespace TDSCoinMaker
         {
             nbrStopWaitingJob.Value = value;
         }
-        public DataGridView getInfoTable()
+
+        public int getJobToChangeAcc()
+        {
+            return (int)nbrJobToChangeAcc.Value;
+        }
+
+        public void setJobToChangeAcc(int value)
+        {
+            nbrJobToChangeAcc.Value = value;
+        }
+
+        public int getJobToStop()
+        {
+            return (int)nbrJobToStop.Value;
+        }
+
+        public void setJobToStop(int value)
+        {
+            nbrJobToStop.Value = value;
+        }
+        public GunaDataGridView getInfoTable()
         {
             return infoTable;
         }
-        public void setInfoTable(DataGridView infoTable)
+        public void setInfoTable(GunaDataGridView infoTable)
         {
             this.infoTable = infoTable;
         }
         public MainForm()
         {
-            FormOption.DisableMaximizeBox(this);
+            CustomTitleBar customTitleBar = new CustomTitleBar(Const.PROGRAM_NAME + " " + Const.PROGRAM_VERSION);
+            customTitleBar.Dock = DockStyle.Top;
+            this.Controls.Add(customTitleBar);
             FormOption.SetTitleBarColor(this.Handle, System.Drawing.Color.Red);
-            InitializeComponent();
             this.FormClosing += MainForm_FormClosing;
+            InitializeComponent();
+            this.ContextMenuStrip = cmsMenuOption;
         }
+
         public static List<User> users = new List<User>();
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -83,6 +109,7 @@ namespace TDSCoinMaker
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
+            FormOption.FadeInForm(this, 8);
             Utilities.setTableSettings(infoTable);
             Utilities.LoadAccFromFile(Const.ACCOUNT_PATH, infoTable);
             Utilities.LoadClientConfig(Const.CLIENT_PATH, this);
@@ -100,13 +127,21 @@ namespace TDSCoinMaker
         {
             if (isFilledData())
             {
-                if (Utilities.isAvaiableToken(infoTable, txtTDSToken.Text, 2))
+                if (Utilities.indexAvaiableToken(infoTable, txtTDSToken.Text, 2) != -1)
                 {
-                    MessageBox.Show("Token already exist");
+                    int rowIndex = Utilities.indexAvaiableToken(infoTable, txtTDSToken.Text, 2);
+                    User user = users.Find(x => x.getId() == Convert.ToInt32(infoTable.Rows[rowIndex].Cells[0].Value));
+                    user.getFbToken().Add(txtFbToken.Text);
+                    user.getProxy().Add(txtProxy.Text);
+                    Utilities.updateColumn(infoTable, rowIndex, 1, Utilities.ToStringCustom(Utilities.getUID(user.getFbToken())));
+                    Utilities.updateColumn(infoTable, rowIndex, 5, Utilities.ToStringCustom(user.getProxy()));
+                    Utilities.SaveAccToFile(Const.ACCOUNT_PATH, infoTable);
                 }
                 else
                 {
-                    User user = new User(txtTDSToken.Text, txtProxy.Text, txtFbToken.Text);
+                    User user = new User(txtTDSToken.Text);
+                    user.getFbToken().Add(txtFbToken.Text);
+                    user.getProxy().Add(txtProxy.Text);
                     user.setId(infoTable.RowCount);
                     users.Add(user);
                     Utilities.addDataToTable(infoTable, user);
@@ -124,10 +159,16 @@ namespace TDSCoinMaker
 
         private void btnRemove_Click(object sender, EventArgs e)
         {
+            if (infoTable.CurrentCell == null)
+            {
+                MessageBox.Show("Please select a row to delete");
+                return;
+            }
             //delete selected row and update users, save to file
             int rowIndex = infoTable.CurrentCell.RowIndex;
             infoTable.Rows.RemoveAt(rowIndex);
             users.RemoveAt(rowIndex);
+            Utilities.resetUserId(users);
             //update id of all users
             if (infoTable.RowCount > 0)
             {
@@ -148,6 +189,15 @@ namespace TDSCoinMaker
         }
         private void infoTable_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Style.BackColor = Color.Red; // Thay đổi màu tùy ý
+            }
+            //kiem tra xem nguoi dung an vao index >=0 khong
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
             User user = users[e.RowIndex];
             if (infoTable.Columns[e.ColumnIndex] is DataGridViewButtonColumn)
             {
@@ -170,24 +220,23 @@ namespace TDSCoinMaker
                     user.StartJob();
                 }
                 else
-                    if (user.logForm == null)
-                {
-                    MessageBox.Show("This process have not opened");
-                }
-                else
-                {
-
-                    user.logForm.Show();
-                }
+                    if (user.logForm == null || user.task == null)
+                    {
+                        MessageBox.Show("This process have not opened");
+                    }
+                    else
+                    {
+                        user.logForm.Show();
+                    }
 
 
             }
             else
             {
-                int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
-                txtFbToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value.ToString();
-                txtTDSToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value.ToString();
-                txtProxy.Text = infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value.ToString();
+                /* int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
+                 txtFbToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value.ToString();
+                 txtTDSToken.Text = infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value.ToString();
+                 txtProxy.Text = infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value.ToString();*/
             }
         }
 
@@ -254,21 +303,31 @@ namespace TDSCoinMaker
 
         private void btnTest1_Click(object sender, EventArgs e)
         {
-           
+            AccountEditor accountEditor = new AccountEditor(users[0]);
+            accountEditor.Show();
         }
-
         private void btnEdit_Click(object sender, EventArgs e)
         {
             //txtFbToken.Text = infoTable.Rows[1].Cells[1].Value.ToString();
-            if (isFilledData())
+            /*          if (isFilledData())
+                      {
+                          int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
+                          infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value = txtFbToken.Text;
+                          infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value = txtTDSToken.Text;
+                          infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value = txtProxy.Text;
+                          Utilities.UpdateUser(int.Parse(infoTable.Rows[thisRowIndex].Cells[0].Value.ToString()), this.infoTable);
+                          Utilities.SaveAccToFile(Const.ACCOUNT_PATH, infoTable);
+                      }*/
+            //  
+            //kiem tra xem nguoi dung da chon dong nao chua
+            if (infoTable.CurrentCell == null)
             {
-                int thisRowIndex = int.Parse(infoTable.CurrentCell.RowIndex.ToString());
-                infoTable.Rows[thisRowIndex].Cells[Const.FB_TOKEN_INDEX].Value = txtFbToken.Text;
-                infoTable.Rows[thisRowIndex].Cells[Const.TDS_TOKEN_INDEX].Value = txtTDSToken.Text;
-                infoTable.Rows[thisRowIndex].Cells[Const.PROXY_INDEX].Value = txtProxy.Text;
-                Utilities.UpdateUser(int.Parse(infoTable.Rows[thisRowIndex].Cells[0].Value.ToString()), this.infoTable);
-                Utilities.SaveAccToFile(Const.ACCOUNT_PATH, infoTable);
+                MessageBox.Show("Please select a row to edit");
+                return;
             }
+            User user = users.Find(x => x.getId() == Convert.ToInt32(infoTable.Rows[infoTable.CurrentCell.RowIndex].Cells[0].Value));
+            AccountEditor accountEditor = new AccountEditor(user);
+            accountEditor.Show();
         }
 
         private void infoTable_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -288,23 +347,48 @@ namespace TDSCoinMaker
             {
                 if (e.ColumnIndex.Equals(Const.ACTION_INDEX))
                 {
-                   
-                    
+
+
                 }
                 else
                 {
                     if (user.logForm.Visible)
                     {
                         infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.CLOSE; // Đặt lại văn bản nếu form log đang hiển thị
-                      
+
                     }
                     else
                     {
                         infoTable.Rows[e.RowIndex].Cells[e.ColumnIndex].Value = Const.OPEN; // Thay đổi văn bản nếu form log đang ẩn
-                
+
                     }
                 }
             }
+        }
+
+        private void nbrJobToStop_ValueChanged(object sender, EventArgs e)
+        {
+            Utilities.SaveClientConfig(Const.CLIENT_PATH, this);
+        }
+
+        private void nbrJobToChangeAcc_ValueChanged(object sender, EventArgs e)
+        {
+            Utilities.SaveClientConfig(Const.CLIENT_PATH, this);
+        }
+
+        private void option1ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Option 1");
+        }
+
+        private void txtTDSToken_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label8_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
